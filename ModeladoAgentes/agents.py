@@ -94,7 +94,17 @@ class FireRescueModel(Model):
         
         chosen_poi = random.choice(possible_poi)
 
-        row, column = random.choice(empty_cells)
+        MIN_ROW, MAX_ROW = 1, 8
+        MIN_COL, MAX_COL = 1, 6
+
+        internal_empty_cells = []
+        for cell in empty_cells:
+            row, col = cell
+            if MIN_ROW <= row <= MAX_ROW and MIN_COL <= col <= MAX_COL:
+                internal_empty_cells.append(cell)
+        
+        selected_cell = random.choice(internal_empty_cells)
+        row, column = selected_cell
 
         self.points_of_interest.data[row, column] = chosen_poi
     
@@ -107,11 +117,16 @@ class FireRescueModel(Model):
         non_empty_count = np.count_nonzero(self.points_of_interest.data != '')
         if non_empty_count < 3:
             self.assign_new_points_of_interest()
+    
+    def assign_fire(self):
+        pass
 
     def step(self):
         self.schedule.step()
 
         self.check_missing_points_of_interest()
+
+        print(self.points_of_interest.data)
 
 model = FireRescueModel()
 
