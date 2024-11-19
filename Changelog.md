@@ -15,4 +15,5 @@
 - Funciones para asignar un nuevo punto de interés (19/11/2024).
 - Cambiar a que solo se pueda asignar un nuevo punto de interés en el centro (19/11/2024).
 - Expansión básica del fuego (solo se agrega humo y fuego) pero sin explosiones (19/11/2024).
-- El humo se convierte en fuego si tiene fuego alrededor de el (19/22/2024).
+- El humo se convierte en fuego si tiene fuego alrededor de el (19/11/2024).
+- Corregir el humo para que solo se exparsa si no hay paredes (19/11/2024)

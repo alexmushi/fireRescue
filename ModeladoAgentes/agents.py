@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 import random
 
-from util import get_game_variables
+from util import get_game_variables, decimal_to_binary
 
 class FireRescueAgent(Agent):
     def __init__(self, id, model):
@@ -68,6 +68,31 @@ class FireRescueModel(Model):
         self.damage = damage
         self.doors = doors
         self.entry_points = entry_points
+    
+    def check_walls(self, pos):
+        (x, y) = pos
+        wall_value = int(self.walls[x, y])
+
+        binary_wall = decimal_to_binary(wall_value)
+
+        up = binary_wall[0]
+        left = binary_wall[1]
+        down = binary_wall[2]
+        right = binary_wall[3]
+
+        possible_positions = []
+
+        # If no wall is found then it is a possible position
+        if up == '0':
+            possible_positions.append((x, y - 1))
+        if left == '0':
+            possible_positions.append((x - 1, y))
+        if down == '0':
+            possible_positions.append((x, y + 1))
+        if right == '0':
+            possible_positions.append((x + 1, y))
+        
+        return possible_positions
 
     def check_door(self, cell1, cell2):
         door_key = frozenset([cell1, cell2])
@@ -130,17 +155,14 @@ class FireRescueModel(Model):
             self.fires.set_cell(pos, 0.5)
     
     def convert_smoke_to_fire(self, pos):
-        (x, y) = pos
+        possible_positions = self.check_walls(pos)
 
-        positions_to_check = []
-        positions_to_check.append(self.fires.data[x, y + 1])
-        positions_to_check.append(self.fires.data[x, y - 1])
-        positions_to_check.append(self.fires.data[x - 1, y])
-        positions_to_check.append(self.fires.data[x + 1, y])
-
-        for position in range(len(positions_to_check)):
-            current_position = positions_to_check[position]
-            if current_position == 1:
+        for position in range(len(possible_positions)):
+            current_position = possible_positions[position]
+            fire_position = self.fires.data[current_position]
+            if fire_position == 1:
+                print("Smoke to fire at", pos)
+                print("Walls: ", decimal_to_binary(int(self.walls[pos])))
                 self.fires.set_cell(pos, 1)
                 break
     
@@ -158,6 +180,15 @@ class FireRescueModel(Model):
         self.assign_fire()
 
         self.check_missing_points_of_interest()
+
+        for y in range(self.height):
+            row_values = []
+            for x in range(self.width):
+                fire_value = self.fires.data[x, y]
+                row_values.append('🔥' if fire_value == 1 else '💨' if fire_value == 0.5 else '.')
+            print(' '.join(row_values))
+
+        print()
 
 model = FireRescueModel()
 

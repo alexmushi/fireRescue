@@ -17,6 +17,23 @@ def binary_to_decimal(binary_input):
 
     return decimal_number
 
+def decimal_to_binary(decimal_input):
+    binary_str = ''
+    number = decimal_input
+    
+    if number == 0:
+        binary_str = '0'
+    else:
+        while number > 0:
+            binary_digit = number % 2
+            binary_str = str(binary_digit) + binary_str
+            number = number // 2
+    
+    # Rellenar con ceros a la izquierda para tener 4 dígitos
+    binary_str = binary_str.zfill(4)
+    
+    return binary_str
+
 def get_game_variables(archivo):
     contenido = leer_archivo(archivo).strip().split("\n")
     index = 0
