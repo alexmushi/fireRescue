@@ -24,25 +24,23 @@ class FireRescueAgent(Agent):
         super().__init__(id, model)
 
         self.hasVictim = False
+        self.actionPoints = 3
 
 class FireRescueModel(Model):
-    def __init__(self, width = 8, height = 6, agents = 6):
+    def __init__(self, width = 10, height = 8, agents = 6):
         super().__init__()
         self.width = width
         self.height = height
         self.schedule = RandomActivation(self)
 
         self.points_of_interest = PropertyLayer(
-            name="Points of Interest", width=width, height=height, default_value='', dtype=str 
-        )
+            name="Points of Interest", width=width, height=height, default_value='', dtype=str)
 
         self.fires = PropertyLayer(
-            name="Fires", width=width, height=height, default_value=0, dtype=int
-        )
+            name="Fires", width=width, height=height, default_value=0, dtype=int)
 
         self.grid = MultiGrid(width, height, torus=False,
-            property_layers=[self.points_of_interest, self.fires]
-        )
+            property_layers=[self.points_of_interest, self.fires])
 
         self.damage = 0
 
@@ -52,14 +50,14 @@ class FireRescueModel(Model):
     def set_game_data(self, archivo):
         walls, points_of_interest, fires, doors, entry_points = get_game_variables(archivo)
         for poi in points_of_interest:
-            x = poi['x'] - 1  
-            y = poi['y'] - 1
+            x = poi['x']
+            y = poi['y']
             pos = (x, y)
             self.points_of_interest.set_cell(pos, poi['type'])
 
         for fire in fires:
-            x = fire['x'] - 1
-            y = fire['y'] - 1
+            x = fire['x']
+            y = fire['y']
             pos = (x, y)
             self.fires.set_cell(pos, 1)
         
@@ -97,8 +95,8 @@ class FireRescueModel(Model):
             print(' '.join(row_values))
         
         print('\n', self.doors, '\n')
-        self.open_door((4, 3), (4, 4))
-        print(self.check_door((4, 3), (4, 4)))
+        self.open_door((5, 4), (5, 5))
+        print(self.check_door((5, 4), (5, 5)))
         print(self.doors, '\n')
 
         print(self.entry_points)

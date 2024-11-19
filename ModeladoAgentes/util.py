@@ -21,12 +21,12 @@ def get_game_variables(archivo):
     contenido = leer_archivo(archivo).strip().split("\n")
     index = 0
 
-    walls = np.zeros((8, 6))
+    walls = np.zeros((10, 8))
     for row in range(6):
         line = contenido[index].strip()
         for part in range(len(line.split())):
             wall = binary_to_decimal(line.split()[part])
-            walls[part, row] = wall
+            walls[part + 1, row + 1] = wall
         index += 1
 
     points_of_interest = []
@@ -52,10 +52,10 @@ def get_game_variables(archivo):
     for _ in range(8):
         line = contenido[index].strip()
         parts = line.split()
-        y1 = int(parts[0]) - 1
-        x1 = int(parts[1]) - 1
-        y2 = int(parts[2]) - 1
-        x2 = int(parts[3]) - 1
+        y1 = int(parts[0])
+        x1 = int(parts[1])
+        y2 = int(parts[2])
+        x2 = int(parts[3])
         cell1 = (x1, y1)
         cell2 = (x2, y2)
         door_key = frozenset([cell1, cell2])
@@ -66,8 +66,8 @@ def get_game_variables(archivo):
     for _ in range(4):
         line = contenido[index].strip()
         parts = line.split()
-        y = int(parts[0]) - 1
-        x = int(parts[1]) - 1
+        y = int(parts[0])
+        x = int(parts[1])
         entry_points.append((x, y))
         index += 1
 
