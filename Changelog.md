@@ -12,3 +12,4 @@
 - Agregar paredes del archivo de input (19/11/2024).
 - Agregar columnas extra del espacio de afuera (19/11/2024)
 - Agregar capa de los daños de cada pared (19/11/2024)
+- Funciones para asignar un nuevo punto de interés (19/11/2024).

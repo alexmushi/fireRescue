@@ -16,6 +16,7 @@ matplotlib.rcParams['animation.embed_limit'] = 2**128
 # NumPy y Pandas imports
 import numpy as np
 import pandas as pd
+import random
 
 from util import get_game_variables
 
@@ -43,6 +44,8 @@ class FireRescueModel(Model):
             property_layers=[self.points_of_interest, self.fires])
 
         self.damage = 0
+        self.false_alarms = 4
+        self.victims = 8
 
         self.set_game_data("inputs.txt")
     
@@ -74,9 +77,41 @@ class FireRescueModel(Model):
         door_key = frozenset([cell1, cell2])
         if door_key in self.doors:
             self.doors[door_key] = 'open'
+    
+    def close_door(self, cell1, cell2):
+        door_key = frozenset([cell1, cell2])
+        if door_key in self.doors:
+            self.doors[door_key] = 'closed'
+    
+    def assign_new_points_of_interest(self):
+        empty_cells = np.argwhere(self.points_of_interest.data == '')
+
+        possible_poi = []
+        if self.false_alarms > 0:
+            possible_poi.append('f')
+        if self.victims > 0:
+            possible_poi.append('v')
+        
+        chosen_poi = random.choice(possible_poi)
+
+        row, column = random.choice(empty_cells)
+
+        self.points_of_interest.data[row, column] = chosen_poi
+    
+        if chosen_poi == 'f':
+            self.false_alarms -= 1
+        elif chosen_poi == 'v':
+            self.victims -= 1
+    
+    def check_missing_points_of_interest(self):
+        non_empty_count = np.count_nonzero(self.points_of_interest.data != '')
+        if non_empty_count < 3:
+            self.assign_new_points_of_interest()
 
     def step(self):
         self.schedule.step()
+
+        self.check_missing_points_of_interest()
 
 model = FireRescueModel()
 
