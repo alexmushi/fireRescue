@@ -29,6 +29,9 @@ def get_game_variables(archivo):
             walls[part + 1, row + 1] = wall
         index += 1
 
+    damage = np.empty_like(walls, dtype=object)
+    damage.fill((0, 0, 0, 0))
+
     points_of_interest = []
     for _ in range(3):
         line = contenido[index].strip()
@@ -71,4 +74,4 @@ def get_game_variables(archivo):
         entry_points.append((x, y))
         index += 1
 
-    return walls, points_of_interest, fires, doors, entry_points
+    return walls, damage, points_of_interest, fires, doors, entry_points

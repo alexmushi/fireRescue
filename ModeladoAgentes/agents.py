@@ -48,7 +48,7 @@ class FireRescueModel(Model):
     
 
     def set_game_data(self, archivo):
-        walls, points_of_interest, fires, doors, entry_points = get_game_variables(archivo)
+        walls, damage, points_of_interest, fires, doors, entry_points = get_game_variables(archivo)
         for poi in points_of_interest:
             x = poi['x']
             y = poi['y']
@@ -62,6 +62,7 @@ class FireRescueModel(Model):
             self.fires.set_cell(pos, 1)
         
         self.walls = walls
+        self.damage = damage
         self.doors = doors
         self.entry_points = entry_points
 
@@ -76,30 +77,6 @@ class FireRescueModel(Model):
 
     def step(self):
         self.schedule.step()
-
-        for y in range(self.height):
-            row_values = []
-            for x in range(self.width):
-                wall = self.walls[x, y]
-                row_values.append(str(wall))
-            print(' '.join(row_values))
-
-
-        print(self.points_of_interest.data, '\n')
-
-        for y in range(self.height):
-            row_values = []
-            for x in range(self.width):
-                fire_value = self.fires.data[x, y]
-                row_values.append('🔥' if fire_value else '.')
-            print(' '.join(row_values))
-        
-        print('\n', self.doors, '\n')
-        self.open_door((5, 4), (5, 5))
-        print(self.check_door((5, 4), (5, 5)))
-        print(self.doors, '\n')
-
-        print(self.entry_points)
 
 model = FireRescueModel()
 
