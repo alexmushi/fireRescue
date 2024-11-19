@@ -38,7 +38,7 @@ class FireRescueModel(Model):
             name="Points of Interest", width=width, height=height, default_value='', dtype=str)
 
         self.fires = PropertyLayer(
-            name="Fires", width=width, height=height, default_value=0, dtype=int)
+            name="Fires", width=width, height=height, default_value=0, dtype=float)
 
         self.grid = MultiGrid(width, height, torus=False,
             property_layers=[self.points_of_interest, self.fires])
@@ -83,8 +83,16 @@ class FireRescueModel(Model):
         if door_key in self.doors:
             self.doors[door_key] = 'closed'
     
+    def select_random_internal_cell(self):
+        MIN_X, MAX_X = 1, 8
+        MIN_Y, MAX_Y = 1, 6
+
+        x = random.randint(MIN_X, MAX_X)
+        y = random.randint(MIN_Y, MAX_Y)
+
+        return (x, y)
+    
     def assign_new_points_of_interest(self):
-        empty_cells = np.argwhere(self.points_of_interest.data == '')
 
         possible_poi = []
         if self.false_alarms > 0:
@@ -94,19 +102,9 @@ class FireRescueModel(Model):
         
         chosen_poi = random.choice(possible_poi)
 
-        MIN_ROW, MAX_ROW = 1, 8
-        MIN_COL, MAX_COL = 1, 6
+        (x, y) = self.select_random_internal_cell()
 
-        internal_empty_cells = []
-        for cell in empty_cells:
-            row, col = cell
-            if MIN_ROW <= row <= MAX_ROW and MIN_COL <= col <= MAX_COL:
-                internal_empty_cells.append(cell)
-        
-        selected_cell = random.choice(internal_empty_cells)
-        row, column = selected_cell
-
-        self.points_of_interest.data[row, column] = chosen_poi
+        self.points_of_interest.data[x, y] = chosen_poi
     
         if chosen_poi == 'f':
             self.false_alarms -= 1
@@ -119,14 +117,24 @@ class FireRescueModel(Model):
             self.assign_new_points_of_interest()
     
     def assign_fire(self):
-        pass
+        (x, y) = self.select_random_internal_cell()
+
+        pos = (x, y)
+
+        if self.fires.data[x, y] == 1:
+            # TODO: Agregar exparsión de fuego (explosiones y todo)
+            print("Fire where it exists")
+        elif self.fires.data[x, y] == 0.5:
+            self.fires.set_cell(pos, 1)
+        elif self.fires.data[x, y] == 0:
+            self.fires.set_cell(pos, 0.5)
 
     def step(self):
         self.schedule.step()
 
-        self.check_missing_points_of_interest()
+        self.assign_fire()
 
-        print(self.points_of_interest.data)
+        self.check_missing_points_of_interest()
 
 model = FireRescueModel()
 

@@ -14,3 +14,4 @@
 - Agregar capa de los daños de cada pared (19/11/2024)
 - Funciones para asignar un nuevo punto de interés (19/11/2024).
 - Cambiar a que solo se pueda asignar un nuevo punto de interés en el centro (19/11/2024).
+- Expansión básica del fuego (solo se agrega humo y fuego) pero sin explosiones (19/11/2024).
