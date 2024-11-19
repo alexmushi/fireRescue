@@ -128,9 +128,32 @@ class FireRescueModel(Model):
             self.fires.set_cell(pos, 1)
         elif self.fires.data[x, y] == 0:
             self.fires.set_cell(pos, 0.5)
+    
+    def convert_smoke_to_fire(self, pos):
+        (x, y) = pos
+
+        positions_to_check = []
+        positions_to_check.append(self.fires.data[x, y + 1])
+        positions_to_check.append(self.fires.data[x, y - 1])
+        positions_to_check.append(self.fires.data[x - 1, y])
+        positions_to_check.append(self.fires.data[x + 1, y])
+
+        for position in range(len(positions_to_check)):
+            current_position = positions_to_check[position]
+            if current_position == 1:
+                self.fires.set_cell(pos, 1)
+                break
+    
+    def check_smoke(self):
+        cells_with_smoke = self.fires.select_cells(lambda x: x == 0.5)
+
+        for cell in cells_with_smoke:
+            self.convert_smoke_to_fire(cell)
 
     def step(self):
         self.schedule.step()
+
+        self.check_smoke()
 
         self.assign_fire()
 
@@ -138,4 +161,5 @@ class FireRescueModel(Model):
 
 model = FireRescueModel()
 
-model.step()
+for i in range(5): 
+    model.step()
