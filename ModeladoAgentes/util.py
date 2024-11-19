@@ -1,12 +1,33 @@
+import numpy as np
+
 def leer_archivo(archivo):
     with open(archivo, 'r') as file:
         return file.read()
+
+def binary_to_decimal(binary_input):
+    binary_str = str(binary_input)
+    decimal_number = 0
+    exponent = len(binary_str) - 1
+
+    for digit in binary_str:
+        if digit not in ('0', '1'):
+            raise ValueError(f"Invalid binary digit '{digit}' found.")
+        decimal_number += int(digit) * (2 ** exponent)
+        exponent -= 1
+
+    return decimal_number
 
 def get_game_variables(archivo):
     contenido = leer_archivo(archivo).strip().split("\n")
     index = 0
 
-    index += 6
+    walls = np.zeros((8, 6))
+    for row in range(6):
+        line = contenido[index].strip()
+        for part in range(len(line.split())):
+            wall = binary_to_decimal(line.split()[part])
+            walls[part, row] = wall
+        index += 1
 
     points_of_interest = []
     for _ in range(3):
@@ -50,4 +71,4 @@ def get_game_variables(archivo):
         entry_points.append((x, y))
         index += 1
 
-    return points_of_interest, fires, doors, entry_points
+    return walls, points_of_interest, fires, doors, entry_points

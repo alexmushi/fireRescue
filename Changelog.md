@@ -9,3 +9,4 @@
 - Cambiar Gitignore a incluir archivos de la mac (18/11/2024).
 - Agregar archivos de cliente servidor (18/11/2024).
 - Agregar base para leer datos y guardarlos en el modelo (18/11/2024).
+- Agregar paredes del archivo de input (19/11/2024).
