@@ -33,6 +33,9 @@ class FireRescueModel(Model):
         self.false_alarms = 4
         self.victims = 8
 
+        self.people_rescued = 0
+        self.people_lost = 0
+
         self.set_game_data("BeachHouse.txt")
 
         for _ in range(agents):
@@ -432,7 +435,21 @@ class FireRescueModel(Model):
         bottom_line += '+'
         print(bottom_line)
     
+    def check_game_over(self):
+        if self.damage_points >= 24:
+            return True
+        
+        if self.people_lost >= 4:
+            return True
+        
+        if self.people_rescued >= 7:
+            return True
+        return False
+    
     def step(self):
+        if self.check_game_over() == True:
+            return
+        
         self.agents.shuffle_do("step")
 
         self.assign_fire()
@@ -445,10 +462,8 @@ model = FireRescueModel()
 
 model.print_map(model.walls.T, model.fires.data.T)
 
-for i in range(50):
+while model.check_game_over() == False:
     model.step()
-
-print("After 50 steps" + "\n")
 
 model.print_map(model.walls.T, model.fires.data.T)
 

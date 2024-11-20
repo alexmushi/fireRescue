@@ -21,3 +21,5 @@
 - Corregir error de explosiones con pared, y agregar puertas (19/11/2024).
 - Imprimir el mapa para visualización y arreglar manejo de paredes (20/11/2024).
 - Agregar un nuevo mapa para probar distintos mapas (20/11/2024).
+- Agregar primra aproximación de agente básico (20/11/2024).
+- Agregar condiciones de paro para cuando termine el juego (20/11/2024).
