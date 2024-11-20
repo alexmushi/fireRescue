@@ -45,6 +45,24 @@ def get_game_variables(archivo):
             wall = binary_to_decimal(line.split()[part])
             walls[part + 1, row + 1] = wall
         index += 1
+    
+    for x in range(10):
+        walls[x, 0] = 2
+    
+    for x in range(10):
+        walls[x, 7] = 8
+    
+    for y in range(8):
+        walls[0, y] = 1
+
+    for y in range(8):
+        walls[9, y] = 4
+    
+    # Casos de esquinas
+    walls[0, 0] = 0
+    walls[9, 0] = 0
+    walls[0, 7] = 0
+    walls[9, 7] = 0
 
     damage = np.empty_like(walls, dtype=object)
     damage.fill((0, 0, 0, 0))
