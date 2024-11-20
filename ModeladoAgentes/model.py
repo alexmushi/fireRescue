@@ -15,17 +15,16 @@ from util import get_game_variables, decimal_to_binary, binary_to_decimal, get_w
 from agent import FireRescueAgent
 
 class FireRescueModel(Model):
-    def __init__(self, width = 10, height = 8, agents = 6):
-        super().__init__()
+    def __init__(self, width = 10, height = 8, agents = 6, seed=None):
+        super().__init__(seed=seed)
         self.width = width
         self.height = height
-        self.schedule = RandomActivation(self)
 
         self.points_of_interest = PropertyLayer(
             name="Points of Interest", width=width, height=height, default_value='', dtype=str)
 
         self.fires = PropertyLayer(
-            name="Fires", width=width, height=height, default_value=0, dtype=float)
+            name="Fires", width=width, height=height, default_value=0.0, dtype=float)
 
         self.grid = MultiGrid(width, height, torus=False,
             property_layers=[self.points_of_interest, self.fires])
@@ -35,6 +34,12 @@ class FireRescueModel(Model):
         self.victims = 8
 
         self.set_game_data("BeachHouse.txt")
+
+        for _ in range(agents):
+            agent = FireRescueAgent(self)
+            entry_point = random.choice(self.entry_points)
+            (x, y) = entry_point
+            self.grid.place_agent(agent, (x, y))
 
     def set_game_data(self, archivo):
         walls, damage, points_of_interest, fires, doors, entry_points = get_game_variables(archivo)
@@ -93,6 +98,26 @@ class FireRescueModel(Model):
             return possible_positions, complete_positions
         else:
             return possible_positions
+    
+    def has_wall_between(self, pos1, pos2):
+        (x1, y1) = pos1
+        (x2, y2) = pos2
+
+        difference_x = x2 - x1
+        difference_y = y2 - y1
+
+        direction = (difference_x, difference_y)
+
+        walls = decimal_to_binary(int(self.walls[pos1]))
+
+        if direction == (0, -1):
+            return walls[0] == '1'
+        elif direction == (-1, 0):
+            return walls[1] == '1'
+        elif direction == (0, 1):
+            return walls[2] == '1'
+        elif direction == (1, 0):
+            return walls[3] == '1'
 
     def check_door(self, cell1, cell2):
         door_key = frozenset([cell1, cell2])
@@ -408,7 +433,7 @@ class FireRescueModel(Model):
         print(bottom_line)
     
     def step(self):
-        self.schedule.step()
+        self.agents.shuffle_do("step")
 
         self.assign_fire()
         
@@ -419,3 +444,13 @@ class FireRescueModel(Model):
 model = FireRescueModel()
 
 model.print_map(model.walls.T, model.fires.data.T)
+
+for i in range(50):
+    model.step()
+
+print("After 50 steps" + "\n")
+
+model.print_map(model.walls.T, model.fires.data.T)
+
+print("Damage Points: ", model.damage_points)
+print(model.steps)
