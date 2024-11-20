@@ -109,7 +109,9 @@ class FireRescueModel(Model):
 
     def check_door(self, cell1, cell2):
         door_key = frozenset([cell1, cell2])
-        return self.doors[door_key]
+        if door_key in self.doors:
+            return self.doors[door_key]
+        return None
     
     def open_door(self, cell1, cell2):
         door_key = frozenset([cell1, cell2])
@@ -185,6 +187,24 @@ class FireRescueModel(Model):
         if new_wall_damage[wall_index_to_explode] == 2:
             self.destroy_wall(pos, wall_index_to_explode)
     
+    def set_wall_explosions(self, walls, direction, current_pos, new_pos):
+        if direction == (0, -1):
+            if walls[0] == '1':
+                self.explosion_wall(current_pos, 0)
+                self.explosion_wall(new_pos, 2, False)
+        elif direction == (-1, 0):
+            if walls[1] == '1':
+                self.explosion_wall(current_pos, 1)
+                self.explosion_wall(new_pos, 3, False)
+        elif direction == (0, 1):
+            if walls[2] == '1':
+                self.explosion_wall(current_pos, 2)
+                self.explosion_wall(new_pos, 0, False)
+        elif direction == (1, 0):
+            if walls[3] == '1':
+                self.explosion_wall(current_pos, 3)
+                self.explosion_wall(new_pos, 1, False)
+    
     def continue_explosion(self, explosion_base_pos, current_pos):
 
         (x, y) = current_pos
@@ -208,26 +228,22 @@ class FireRescueModel(Model):
                 self.fires.set_cell(new_pos, 1)
             elif self.fires.data[new_pos] == 1:
                 self.continue_explosion(current_pos, new_pos)
+        elif self.check_door(current_pos, new_pos) is not None:
+            door_state = self.check_door(current_pos, new_pos)
+            if door_state == 'closed':
+                self.open_door(current_pos, new_pos)
+            elif door_state == 'open':
+                if self.fires.data[new_pos] == 0:
+                    self.fires.set_cell(new_pos, 1)
+                elif self.fires.data[new_pos] == 0.5:
+                    self.fires.set_cell(new_pos, 1)
+                elif self.fires.data[new_pos] == 1:
+                    self.continue_explosion(current_pos, new_pos)
         else:
             # Has a wall or door so different rules apply
             walls = decimal_to_binary(int(self.walls[current_pos]))
 
-            if direction == (0, -1):
-                if walls[0] == '1':
-                    self.explosion_wall(current_pos, 0)
-                    self.explosion_wall(new_pos, 2, False)
-            elif direction == (-1, 0):
-                if walls[1] == '1':
-                    self.explosion_wall(current_pos, 1)
-                    self.explosion_wall(new_pos, 3, False)
-            elif direction == (0, 1):
-                if walls[2] == '1':
-                    self.explosion_wall(current_pos, 2)
-                    self.explosion_wall(new_pos, 0, False)
-            elif direction == (1, 0):
-                if walls[3] == '1':
-                    self.explosion_wall(current_pos, 3)
-                    self.explosion_wall(new_pos, 1, False)
+            self.set_wall_explosions(walls, direction, current_pos, new_pos)
 
     def explosion(self, pos):
         adjacent_with_no_walls, all_adjacent_cells = self.check_walls(pos, True)
@@ -246,19 +262,26 @@ class FireRescueModel(Model):
                 cells_with_walls.append(cell)
 
         for cell in cells_with_walls:
-            walls = decimal_to_binary(int(self.walls[pos]))
-            if walls[0] == '1':
-                self.explosion_wall(pos, 0)
-                self.explosion_wall(cell, 2, False)
-            if walls[1] == '1':
-                self.explosion_wall(pos, 1)
-                self.explosion_wall(cell, 3, False)
-            if walls[2] == '1':
-                self.explosion_wall(pos, 2)
-                self.explosion_wall(cell, 0, False)
-            if walls[3] == '1':
-                self.explosion_wall(pos, 3)
-                self.explosion_wall(cell, 1, False)
+            if self.check_door(pos, cell) is not None:
+                door_state = self.check_door(pos, cell)
+                if door_state == 'closed':
+                    self.open_door(pos, cell)
+                elif door_state == 'open':
+                    if self.fires.data[cell] == 0:
+                        self.fires.set_cell(cell, 1)
+                    elif self.fires.data[cell] == 0.5:
+                        self.fires.set_cell(cell, 1)
+                    elif self.fires.data[cell] == 1:
+                        self.continue_explosion(pos, cell)
+            else: 
+                walls = decimal_to_binary(int(self.walls[pos]))
+
+                difference_x = cell[0] - pos[0]
+                difference_y = cell[1] - pos[1]
+
+                direction = (difference_x, difference_y)
+
+                self.set_wall_explosions(walls, direction, pos, cell)
 
     def assign_fire(self):
         (x, y) = self.select_random_internal_cell()
@@ -308,5 +331,5 @@ class FireRescueModel(Model):
 
 model = FireRescueModel()
 
-for i in range(5): 
+for i in range(10):
     model.step()

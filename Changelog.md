@@ -18,3 +18,4 @@
 - El humo se convierte en fuego si tiene fuego alrededor de el (19/11/2024).
 - Corregir el humo para que solo se exparsa si no hay paredes (19/11/2024)
 - Agregar explosiones con paredes, destrucción de paredes y daño de paredes (19/11/2024).
+- Corregir error de explosiones con pared, y agregar puertas (19/11/2024).
