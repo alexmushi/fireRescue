@@ -34,7 +34,7 @@ class FireRescueModel(Model):
         self.false_alarms = 4
         self.victims = 8
 
-        self.set_game_data("inputs.txt")
+        self.set_game_data("BeachHouse.txt")
 
     def set_game_data(self, archivo):
         walls, damage, points_of_interest, fires, doors, entry_points = get_game_variables(archivo)
@@ -418,6 +418,4 @@ class FireRescueModel(Model):
 
 model = FireRescueModel()
 
-for i in range(10):
-    model.step()
-    model.print_map(model.walls.T, model.fires.data.T)
+model.print_map(model.walls.T, model.fires.data.T)

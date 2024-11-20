@@ -20,3 +20,4 @@
 - Agregar explosiones con paredes, destrucción de paredes y daño de paredes (19/11/2024).
 - Corregir error de explosiones con pared, y agregar puertas (19/11/2024).
 - Imprimir el mapa para visualización y arreglar manejo de paredes (20/11/2024).
+- Agregar un nuevo mapa para probar distintos mapas (20/11/2024).
