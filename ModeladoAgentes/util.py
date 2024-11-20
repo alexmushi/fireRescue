@@ -34,6 +34,18 @@ def decimal_to_binary(decimal_input):
     
     return binary_str
 
+def get_walls(value):
+     # Walls are represented as (top, left, bottom, right) in binary
+    # Bits correspond to (8, 4, 2, 1)
+    bits = f"{int(value):04b}"
+    walls = {
+        'top': bits[0] == '1',
+        'left': bits[1] == '1',
+        'bottom': bits[2] == '1',
+        'right': bits[3] == '1'
+    }
+    return walls
+
 def get_game_variables(archivo):
     contenido = leer_archivo(archivo).strip().split("\n")
     index = 0

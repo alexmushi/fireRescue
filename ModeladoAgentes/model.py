@@ -1,31 +1,18 @@
 # Mesa imports
-from mesa import Agent, Model
+from mesa import Model
 from mesa.space import MultiGrid, PropertyLayer
 from mesa.time import RandomActivation
 from mesa.datacollection import DataCollector
-
-# Matplotlib imports
-import matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-
-# Configuración de Matplotlib
-plt.rcParams["animation.html"] = "jshtml"
-matplotlib.rcParams['animation.embed_limit'] = 2**128
 
 # NumPy y Pandas imports
 import numpy as np
 import pandas as pd
 import random
 
-from util import get_game_variables, decimal_to_binary, binary_to_decimal
+from util import get_game_variables, decimal_to_binary, binary_to_decimal, get_walls
 
-class FireRescueAgent(Agent):
-    def __init__(self, id, model):
-        super().__init__(id, model)
-
-        self.hasVictim = False
-        self.actionPoints = 3
+# Import the FireRescueAgent class from the agent.py file
+from agent import FireRescueAgent
 
 class FireRescueModel(Model):
     def __init__(self, width = 10, height = 8, agents = 6):
@@ -116,12 +103,19 @@ class FireRescueModel(Model):
     def open_door(self, cell1, cell2):
         door_key = frozenset([cell1, cell2])
         if door_key in self.doors:
-            self.doors[door_key] = 'open'
+            if self.doors[door_key] != 'destroyed':
+                self.doors[door_key] = 'open'
+    
+    def destroy_door(self, cell1, cell2):
+        door_key = frozenset([cell1, cell2])
+        if door_key in self.doors:
+            self.doors[door_key] = 'destroyed'
     
     def close_door(self, cell1, cell2):
         door_key = frozenset([cell1, cell2])
         if door_key in self.doors:
-            self.doors[door_key] = 'closed'
+            if self.doors[door_key] != 'destroyed':
+                self.doors[door_key] = 'closed'
     
     def select_random_internal_cell(self):
         MIN_X, MAX_X = 1, 8
@@ -231,8 +225,8 @@ class FireRescueModel(Model):
         elif self.check_door(current_pos, new_pos) is not None:
             door_state = self.check_door(current_pos, new_pos)
             if door_state == 'closed':
-                self.open_door(current_pos, new_pos)
-            elif door_state == 'open':
+                self.destroy_door(current_pos, new_pos)
+            elif door_state == 'open' or door_state == 'destroyed':
                 if self.fires.data[new_pos] == 0:
                     self.fires.set_cell(new_pos, 1)
                 elif self.fires.data[new_pos] == 0.5:
@@ -265,8 +259,8 @@ class FireRescueModel(Model):
             if self.check_door(pos, cell) is not None:
                 door_state = self.check_door(pos, cell)
                 if door_state == 'closed':
-                    self.open_door(pos, cell)
-                elif door_state == 'open':
+                    self.destroy_door(pos, cell)
+                elif door_state == 'open' or door_state == 'destroyed':
                     if self.fires.data[cell] == 0:
                         self.fires.set_cell(cell, 1)
                     elif self.fires.data[cell] == 0.5:
@@ -296,7 +290,7 @@ class FireRescueModel(Model):
             self.fires.set_cell(pos, 0.5)
     
     def convert_smoke_to_fire(self, pos):
-        possible_positions = self.check_walls(pos)
+        possible_positions, all_adjacent_cells = self.check_walls(pos, True)
 
         for position in range(len(possible_positions)):
             current_position = possible_positions[position]
@@ -304,6 +298,20 @@ class FireRescueModel(Model):
             if fire_position == 1:
                 self.fires.set_cell(pos, 1)
                 break
+        
+        cells_with_walls = []
+        for cell in all_adjacent_cells:
+            if cell not in possible_positions:
+                cells_with_walls.append(cell)
+        
+        for cell in cells_with_walls:
+            if self.check_door(pos, cell) is not None:
+                door_state = self.check_door(pos, cell)
+                fire_position = self.fires.data[cell]
+                if door_state == 'open':
+                    if fire_position == 1:
+                        self.fires.set_cell(pos, 1)
+                        break
     
     def check_smoke(self):
         cells_with_smoke = self.fires.select_cells(lambda x: x == 0.5)
@@ -311,25 +319,105 @@ class FireRescueModel(Model):
         for cell in cells_with_smoke:
             self.convert_smoke_to_fire(cell)
 
+    def print_map(self, walls_array, fires_array):
+        height, width = walls_array.shape
+        for y in range(height):
+            # Print the top walls of the current row
+            top_line = ''
+            for x in range(width):
+                wall_value = walls_array[y, x]
+                walls = get_walls(wall_value)
+                top_line += '+'
+                if walls['top']:
+                    if y > 0:
+                        door_state = self.check_door((x, y), (x, y - 1))
+                        if door_state == 'open':
+                            top_line += ' O '
+                        elif door_state == 'closed':
+                            top_line += ' D '
+                        elif door_state == 'destroyed':
+                            top_line += ' X '
+                        else:
+                            top_line += '---'
+                    else:
+                        top_line += '---'
+                else:
+                    top_line += '   '
+            top_line += '+'
+            print(top_line)
+            
+            # Print the left walls and cell contents
+            middle_line = ''
+            for x in range(width):
+                wall_value = walls_array[y, x]
+                walls = get_walls(wall_value)
+                if walls['left']:
+                    if x > 0:
+                        door_state = self.check_door((x, y), (x - 1, y))
+                        if door_state == 'open':
+                            middle_line += 'O'
+                        elif door_state == 'closed':
+                            middle_line += 'D'
+                        elif door_state == 'destroyed':
+                            middle_line += 'X'
+                        else:
+                            middle_line += '|'
+                    else:
+                        middle_line += '|'
+                else:
+                    middle_line += ' '
+                fire_value = fires_array[y, x]
+                if fire_value == 1:
+                    cell_content = ' F '
+                elif fire_value == 0.5:
+                    cell_content = ' S '
+                else:
+                    cell_content = '   '  
+                middle_line += cell_content
+            # Handle the right wall of the last cell in the row
+            last_cell_walls = get_walls(walls_array[y, width - 1])
+            if last_cell_walls['right']:
+                # Assuming no doors on the right edge
+                middle_line += '|'
+            else:
+                middle_line += ' '
+            print(middle_line)
+        
+        # Print the bottom walls of the last row
+        bottom_line = ''
+        for x in range(width):
+            wall_value = walls_array[height - 1, x]
+            walls = get_walls(wall_value)
+            bottom_line += '+'
+            if walls['bottom']:
+                if y < height - 1:
+                    door_state = self.check_door((x, height - 1), (x, height))
+                    if door_state == 'open':
+                        bottom_line += ' O '
+                    elif door_state == 'closed':
+                        bottom_line += ' D '
+                    elif door_state == 'destroyed':
+                        bottom_line += ' X '
+                    else:
+                        bottom_line += '---'
+                else:
+                    bottom_line += '---'
+            else:
+                bottom_line += '   '
+        bottom_line += '+'
+        print(bottom_line)
+    
     def step(self):
         self.schedule.step()
 
+        self.assign_fire()
+        
         self.check_smoke()
 
-        self.assign_fire()
-
         self.check_missing_points_of_interest()
-
-        for y in range(self.height):
-            row_values = []
-            for x in range(self.width):
-                fire_value = self.fires.data[x, y]
-                row_values.append('🔥' if fire_value == 1 else '💨' if fire_value == 0.5 else '.')
-            print(' '.join(row_values))
-
-        print()
 
 model = FireRescueModel()
 
 for i in range(10):
     model.step()
+    model.print_map(model.walls.T, model.fires.data.T)
