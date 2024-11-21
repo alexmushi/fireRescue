@@ -12,7 +12,7 @@ public static class CreateGrid
             {
                 Vector3 position = new Vector3(x, 0, y); 
                 GameObject cell = Object.Instantiate(floorTile, position, Quaternion.identity, gameGrid);
-                cell.name = $"Cell_{x}_{y}";
+                cell.name = $"Cell({x},{y})";
                 floorTiles[x, y] = cell;
             }
         }
