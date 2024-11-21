@@ -29,3 +29,4 @@
 - Agregar prefab de pared modelada en 3D (21/11/2024).
 - Fix de prefab 3D Wall (21/11/2024).
 - Agregar paredes al grid de forma correcta (21/11/2024).
+- Arreglar paredes y el brillo para formar el mapa correctamente (21/11/2024).

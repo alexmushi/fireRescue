@@ -225,8 +225,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cd0fcc98755754e0f80eb6165578c395, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  floorTile: {fileID: 5935252998142918327, guid: 46a54d90040d64c48ae48bce901cab57, type: 3}
-  wallPrefab: {fileID: 4875335676477305301, guid: a100745ccd21247b281636c709f6c508, type: 3}
+  floorTile: {fileID: 1153733476952630636, guid: 389e6bca67fa54eb2a2ee9a9a4d5db1e, type: 3}
+  wallPrefab: {fileID: 3027849048383625404, guid: 5ecb9f7e3ec1c496a9a40f80a6953c88, type: 3}
 --- !u!114 &1515615940
 MonoBehaviour:
   m_ObjectHideFlags: 0
