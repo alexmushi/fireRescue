@@ -1,7 +1,6 @@
 # Mesa imports
 from mesa import Model
 from mesa.space import MultiGrid, PropertyLayer
-from mesa.time import RandomActivation
 from mesa.datacollection import DataCollector
 
 # NumPy y Pandas imports
@@ -458,14 +457,5 @@ class FireRescueModel(Model):
 
         self.check_missing_points_of_interest()
 
-model = FireRescueModel()
-
-model.print_map(model.walls.T, model.fires.data.T)
-
-while model.check_game_over() == False:
-    model.step()
-
-model.print_map(model.walls.T, model.fires.data.T)
-
-print("Damage Points: ", model.damage_points)
-print(model.steps)
+# while model.check_game_over() == False:
+#     model.step()

@@ -23,3 +23,4 @@
 - Agregar un nuevo mapa para probar distintos mapas (20/11/2024).
 - Agregar primra aproximación de agente básico (20/11/2024).
 - Agregar condiciones de paro para cuando termine el juego (20/11/2024).
+- Mandar datos de modelo a Unity primera version (20/11/2024).

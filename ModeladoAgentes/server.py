@@ -2,11 +2,16 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import logging
 import json
 
+from model import FireRescueModel
+from util import serialize_doors
+
+model = FireRescueModel()
+
 class Server(BaseHTTPRequestHandler):
     
     def _set_response(self):
         self.send_response(200)
-        self.send_header('Content-type', 'text/html')
+        self.send_header('Content-Type', 'application/json')
         self.end_headers()
         
     def do_GET(self):
@@ -14,14 +19,21 @@ class Server(BaseHTTPRequestHandler):
         self.wfile.write("GET request for {}".format(self.path).encode('utf-8'))
 
     def do_POST(self):
-        position = {
-            "x" : 1,
-            "y" : 2,
-            "z" : 3
+        data = {
+            "damage_points": model.damage_points,
+            "people_lost": model.people_lost,
+            "people_rescued": model.people_rescued,
+            "walls": model.walls.T.tolist(),
+            "fires": model.fires.data.T.tolist(),
+            "points_of_interest": model.points_of_interest.data.T.tolist(),
+            "doors": serialize_doors(model.doors),
+            "entry_points": model.entry_points
         }
 
+        json_data = json.dumps(data)
+
         self._set_response()
-        self.wfile.write(str(position).encode('utf-8'))
+        self.wfile.write(json_data.encode('utf-8'))
 
 
 def run(server_class=HTTPServer, handler_class=Server, port=8585):
