@@ -36,7 +36,7 @@ class FireRescueModel(Model):
         self.people_rescued = 0
         self.people_lost = 0
 
-        self.set_game_data("BeachHouse.txt")
+        self.set_game_data("inputs.txt")
 
         for _ in range(agents):
             agent = FireRescueAgent(self)

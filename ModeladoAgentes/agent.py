@@ -63,7 +63,8 @@ class FireRescueAgent(Agent):
             if action_performed:
                 continue  # Go back to while loop to use storedAP
 
-            # 4. Move towards nearest fire
+            # 4. Decide whether to move
+            # Agent only moves if it can perform an action after moving or has more than 4 AP
             if self.storedAP >= self.COST_MOVE:
                 target_pos = self.find_nearest_fire()
                 if target_pos is None:
@@ -71,9 +72,29 @@ class FireRescueAgent(Agent):
                 path = self.find_path_to(target_pos)
                 if len(path) > 1:
                     next_step = path[1]
-                    self.move_to(next_step)
-                    action_performed = True
-                    continue  # After moving, check again
+                    # Calculate the cost to move to next_step
+                    move_cost = self.calculate_move_cost(self.pos, next_step)
+                    if self.storedAP >= move_cost:
+                        # Calculate remaining AP after moving
+                        ap_after_move = self.storedAP - move_cost
+                        # From next_step, check if there is any action the agent can perform
+                        actions_available = self.check_actions_after_move(next_step, ap_after_move)
+                        if actions_available:
+                            # Proceed to move
+                            self.move_to(next_step)
+                            action_performed = True
+                            continue  # After moving, check again
+                        else:
+                            if self.storedAP > 4:
+                                # Proceed to move anyway to reach 8 AP next turn
+                                self.move_to(next_step)
+                                action_performed = True
+                                continue  # After moving, check again
+                            else:
+                                # Do not move; save AP
+                                break
+                    else:
+                        break  # Not enough AP to move
                 else:
                     break  # Cannot move further
             else:
@@ -123,6 +144,46 @@ class FireRescueAgent(Agent):
                     # Door is open or no door
                     self.model.grid.move_agent(self, pos)
                     self.storedAP -= self.COST_MOVE
+
+    def calculate_move_cost(self, from_pos, to_pos):
+        cost = 0
+        if self.has_wall_between(from_pos, to_pos):
+            cost += self.COST_DAMAGE_WALL  # Cost to damage wall
+            cost += self.COST_MOVE
+        else:
+            door_state = self.model.check_door(from_pos, to_pos)
+            if door_state == 'closed':
+                cost += self.COST_OPEN_DOOR
+                cost += self.COST_MOVE
+            else:
+                cost += self.COST_MOVE
+        return cost
+
+    def check_actions_after_move(self, pos, remaining_ap):
+        actions_available = False
+        neighbors = self.model.grid.get_neighborhood(
+            pos,
+            moore=False,  # Only cardinal directions
+            include_center=False
+        )
+
+        for neighbor_pos in neighbors:
+            if self.has_wall_between(pos, neighbor_pos):
+                continue
+
+            fire_value = self.model.fires.data[neighbor_pos]
+            if fire_value == 1 and remaining_ap >= self.COST_EXTINGUISH_FIRE:
+                actions_available = True
+                break  # Can extinguish fire
+            elif fire_value == 0.5 and remaining_ap >= self.COST_EXTINGUISH_SMOKE:
+                actions_available = True
+                break  # Can extinguish smoke
+            else:
+                door_state = self.model.check_door(pos, neighbor_pos)
+                if door_state == 'closed' and remaining_ap >= self.COST_OPEN_DOOR:
+                    actions_available = True
+                    break  # Can open door
+        return actions_available
 
     def damage_wall(self, pos1, pos2):
         walls = decimal_to_binary(int(self.model.walls[pos1]))
