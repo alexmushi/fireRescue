@@ -1,5 +1,3 @@
-# Agent.py
-
 from mesa import Agent
 import numpy as np
 import heapq
@@ -25,70 +23,63 @@ class FireRescueAgent(Agent):
         if self.storedAP > self.MAX_AP:
             self.storedAP = self.MAX_AP
 
-        action_performed = False
+        while self.storedAP > 0:
+            action_performed = False
 
-        # 2. Attempt to open doors in adjacent cells
-        neighbors = self.model.grid.get_neighborhood(
-            self.pos,
-            moore=False,  # Only cardinal directions
-            include_center=False
-        )
+            # 2. Attempt to extinguish fires and smokes in adjacent cells
+            neighbors = self.model.grid.get_neighborhood(
+                self.pos,
+                moore=False,  # Only cardinal directions
+                include_center=False
+            )
 
-        for neighbor_pos in neighbors:
-            if self.storedAP >= self.COST_OPEN_DOOR:
-                door_state = self.model.check_door(self.pos, neighbor_pos)
-                if door_state == 'closed':
-                    self.model.open_door(self.pos, neighbor_pos)
-                    self.storedAP -= self.COST_OPEN_DOOR
+            for neighbor_pos in neighbors:
+                if self.has_wall_between(self.pos, neighbor_pos):
+                    continue
+
+                fire_value = self.model.fires.data[neighbor_pos]
+                if fire_value == 1 and self.storedAP >= self.COST_EXTINGUISH_FIRE:
+                    self.extinguish_fire(neighbor_pos)
                     action_performed = True
-                    break  # Perform one action per step
+                    break  # Extinguished a fire; check again
+                elif fire_value == 0.5 and self.storedAP >= self.COST_EXTINGUISH_SMOKE:
+                    self.extinguish_smoke(neighbor_pos)
+                    action_performed = True
+                    break  # Extinguished smoke; check again
 
-        # 3. Extinguish fires and smokes in adjacent cells
-        for neighbor_pos in neighbors:
-            if self.has_wall_between(self.pos, neighbor_pos):
-                continue
+            if action_performed:
+                continue  # Go back to while loop to use storedAP
 
-            fire_value = self.model.fires.data[neighbor_pos]
-            if fire_value == 1 and self.storedAP >= self.COST_EXTINGUISH_FIRE:
-                self.extinguish_fire(neighbor_pos)
-                action_performed = True
-            elif fire_value == 0.5 and self.storedAP >= self.COST_EXTINGUISH_SMOKE:
-                self.extinguish_smoke(neighbor_pos)
-                action_performed = True
+            # 3. Attempt to open doors in adjacent cells if needed
+            for neighbor_pos in neighbors:
+                if self.storedAP >= self.COST_OPEN_DOOR:
+                    door_state = self.model.check_door(self.pos, neighbor_pos)
+                    if door_state == 'closed':
+                        self.model.open_door(self.pos, neighbor_pos)
+                        self.storedAP -= self.COST_OPEN_DOOR
+                        action_performed = True
+                        break  # Opened a door; check again
 
-        # 4. Attempt to rescue POI in the same cell
-        current_poi_value = self.model.points_of_interest.data[self.pos]
-        if current_poi_value != '' and self.storedAP >= 1:
-            self.rescue_poi(self.pos)
-            action_performed = True
+            if action_performed:
+                continue  # Go back to while loop to use storedAP
 
-        # 5. Decide whether to move or save AP
-        if not action_performed:
-            if self.storedAP < self.MAX_AP:
-                pass  # Save AP if not full
+            # 4. Move towards nearest fire
+            if self.storedAP >= self.COST_MOVE:
+                target_pos = self.find_nearest_fire()
+                if target_pos is None:
+                    break  # No fires left
+                path = self.find_path_to(target_pos)
+                if len(path) > 1:
+                    next_step = path[1]
+                    self.move_to(next_step)
+                    action_performed = True
+                    continue  # After moving, check again
+                else:
+                    break  # Cannot move further
             else:
-                while self.storedAP >= self.COST_MOVE:
-                    target_pos = self.find_nearest_fire()
-                    if target_pos is None:
-                        break
-                    path = self.find_path_to(target_pos)
-                    if len(path) > 1:
-                        next_step = path[1]
-                        self.move_to(next_step)
-                    else:
-                        break
+                break  # Not enough AP to move
 
-                    # Attempt an action in the new position
-                    fire_value = self.model.fires.data[self.pos]
-                    if fire_value == 1 and self.storedAP >= self.COST_EXTINGUISH_FIRE:
-                        self.extinguish_fire(self.pos)
-                        break
-                    elif fire_value == 0.5 and self.storedAP >= self.COST_EXTINGUISH_SMOKE:
-                        self.extinguish_smoke(self.pos)
-                        break
-                    elif current_poi_value != '' and self.storedAP >= 1:
-                        self.rescue_poi(self.pos)
-                        break
+        # End of turn; any cleanup can be done here
 
     def extinguish_fire(self, pos):
         if self.storedAP >= self.COST_EXTINGUISH_FIRE:
@@ -102,10 +93,6 @@ class FireRescueAgent(Agent):
                 self.model.fires.set_cell(pos, 0)  # Remove smoke
                 self.storedAP -= self.COST_EXTINGUISH_SMOKE
 
-    def rescue_poi(self, pos):
-        self.model.points_of_interest.set_cell(pos, '')  # Rescue POI
-        self.hasVictim = True  # Update state if necessary
-
     def move_to(self, pos):
         if self.storedAP >= self.COST_MOVE:
             if self.has_wall_between(self.pos, pos):
@@ -118,7 +105,7 @@ class FireRescueAgent(Agent):
                     self.model.grid.move_agent(self, pos)
                     self.storedAP -= self.COST_MOVE
                 else:
-                    pass  # Cannot move
+                    pass  # Cannot move due to insufficient AP
             else:
                 # No wall
                 door_state = self.model.check_door(self.pos, pos)
@@ -131,7 +118,7 @@ class FireRescueAgent(Agent):
                         self.model.grid.move_agent(self, pos)
                         self.storedAP -= self.COST_MOVE
                     else:
-                        pass  # Cannot move
+                        pass  # Cannot move due to insufficient AP
                 else:
                     # Door is open or no door
                     self.model.grid.move_agent(self, pos)
