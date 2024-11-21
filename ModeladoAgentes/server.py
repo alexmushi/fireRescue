@@ -23,6 +23,8 @@ class Server(BaseHTTPRequestHandler):
             "damage_points": model.damage_points,
             "people_lost": model.people_lost,
             "people_rescued": model.people_rescued,
+            "width": model.width,
+            "height": model.height,
             "walls": model.walls.T.tolist(),
             "fires": model.fires.data.T.tolist(),
             "points_of_interest": model.points_of_interest.data.T.tolist(),

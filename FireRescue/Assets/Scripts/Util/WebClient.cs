@@ -7,8 +7,10 @@ using Newtonsoft.Json; // Install Newtonsoft.Json
 
 public class WebClient : MonoBehaviour
 {
+    public GameObject floorTile;
+
     // IEnumerator - yield return
-    IEnumerator SendData(string data)
+    IEnumerator SendDataStart(string data)
     {
         WWWForm form = new WWWForm();
         form.AddField("bundle", "the data");
@@ -28,42 +30,17 @@ public class WebClient : MonoBehaviour
             else
             {
                 string jsonResponse = www.downloadHandler.text;
-                Debug.Log("Response: " + jsonResponse);
 
                 try
                 {
+                    // Deserialize JSON and create grid
                     GameData gameData = JsonConvert.DeserializeObject<GameData>(jsonResponse);
-                    Debug.Log("Damage Points: " + gameData.damage_points);
-                    Debug.Log("People Lost: " + gameData.people_lost);
-                    Debug.Log("People Rescued: " + gameData.people_rescued);
-                    foreach (List<double> row in gameData.walls)
-                    {
-                        string rowString = string.Join(", ", row);
-                        
-                        Debug.Log(rowString);
-                    }
-                    foreach (List<double> row in gameData.fires)
-                    {
-                        string rowString = string.Join(", ", row);
-                        
-                        Debug.Log(rowString);
-                    }
-                    foreach (List<string> row in gameData.points_of_interest)
-                    {
-                        string rowString = string.Join(", ", row);
-                        
-                        Debug.Log(rowString);
-                    }
-                    foreach (Door door in gameData.doors)
-                    {
-                        string coord1 = $"{door.coord1[0]}, {door.coord1[1]}";
-                        string coord2 = $"{door.coord2[0]}, {door.coord2[1]}";
-                        Debug.Log($"Door between ({coord1}) and ({coord2}): {door.status}");
-                    }
-                    foreach (int[] entry in gameData.entry_points)
-                    {
-                        Debug.Log($"Entry Point: {entry[0]}, {entry[1]}");
-                    }
+
+                    GameObject gridContainer = new GameObject("GameGrid");
+                    Transform gridTransform = gridContainer.transform;
+
+                    gridCreated = true;
+                    CreateGrid.CreateGridTiles(floorTile, gridTransform, gameData.width, gameData.height);
                 }
                 catch (System.Exception ex)
                 {
@@ -74,12 +51,11 @@ public class WebClient : MonoBehaviour
 
     }
 
-
     // Start is called before the first frame update
     void Start()
     {
         string json = "{}"; 
-        StartCoroutine(SendData(json));
+        StartCoroutine(SendDataStart(json));
     }
 
     // Update is called once per frame

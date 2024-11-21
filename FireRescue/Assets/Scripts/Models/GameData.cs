@@ -14,6 +14,8 @@ public class GameData
     public int damage_points;
     public int people_lost;
     public int people_rescued;
+    public int width;
+    public int height;
     public List<List<double>> walls;
     public List<List<double>> fires;
     public List<List<string>> points_of_interest;

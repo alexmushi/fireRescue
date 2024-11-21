@@ -24,3 +24,4 @@
 - Agregar primra aproximación de agente básico (20/11/2024).
 - Agregar condiciones de paro para cuando termine el juego (20/11/2024).
 - Mandar datos de modelo a Unity primera version (20/11/2024).
+- Crear Grid en Unity en base a width y height enviados de Python (20/11/2024).
