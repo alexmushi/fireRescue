@@ -27,3 +27,4 @@
 - Crear Grid en Unity en base a width y height enviados de Python (20/11/2024).
 - Agregar model de paredes y primera version de paredes (21/11/2024).
 - Agregar prefab de pared modelada en 3D (21/11/2024).
+- Fix de prefab 3D Wall (21/11/2024).
