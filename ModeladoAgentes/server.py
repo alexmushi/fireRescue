@@ -3,7 +3,7 @@ import logging
 import json
 
 from model import FireRescueModel
-from util import serialize_doors
+from util import serialize_doors, decimal_to_binary
 
 model = FireRescueModel()
 
@@ -25,8 +25,8 @@ class Server(BaseHTTPRequestHandler):
             "people_rescued": model.people_rescued,
             "width": model.width,
             "height": model.height,
-            "walls": model.walls.T.tolist(),
-            "fires": model.fires.data.T.tolist(),
+            "walls": model.walls.tolist(),
+            "fires": model.fires.data.tolist(),
             "points_of_interest": model.points_of_interest.data.T.tolist(),
             "doors": serialize_doors(model.doors),
             "entry_points": model.entry_points
