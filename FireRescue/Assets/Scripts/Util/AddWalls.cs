@@ -74,39 +74,6 @@ public static class AddWalls
         float halfSize = 0.5f;
 
         string binaryWalls = Convert.ToString(walls, 2).PadLeft(4, '0');
-        if (binaryWalls[0] == '1')
-        {
-            if (!doorDirections.Contains(0))
-            {
-                Vector3 position = cellPosition + new Vector3(0.168f, 0, halfSize);
-                Quaternion rotation = Quaternion.Euler(0, 90, 0);
-                GameObject newWall = UnityEngine.Object.Instantiate(wallPrefab, position, rotation, cell.transform);
-                newWall.name = $"Up Wall at {cell.name}";
-            }
-            else {
-                Vector3 position = cellPosition + new Vector3(0, 0.4f, halfSize);
-                Quaternion rotation = Quaternion.Euler(90, 0, 0);
-                GameObject newDoor = UnityEngine.Object.Instantiate(doorPrefab, position, rotation, cell.transform);
-                newDoor.name = $"Up Door at {cell.name}";
-            }
-        }
-
-        if (binaryWalls[1] == '1')
-        {
-            if (!doorDirections.Contains(1))
-            {
-                Vector3 position = cellPosition + new Vector3(-halfSize, 0, 0.168f);
-                Quaternion rotation = Quaternion.identity;
-                GameObject newWall = UnityEngine.Object.Instantiate(wallPrefab, position, rotation, cell.transform);
-                newWall.name = $"Left Wall at {cell.name}";
-            }
-            else {
-                Vector3 position = cellPosition + new Vector3(-halfSize, 0.4f, 0);
-                Quaternion rotation = Quaternion.Euler(90, 90, 0);
-                GameObject newDoor = UnityEngine.Object.Instantiate(doorPrefab, position, rotation, cell.transform);
-                newDoor.name = $"Left Door at {cell.name}";
-            }
-        }
 
         if (binaryWalls[2] == '1')
         {
