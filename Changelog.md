@@ -34,3 +34,4 @@
 - Optimizar que las paredes y las puertas solo se renderizen una vez (21/11/2024).
 - Refactor para utilizar Singletons y agregar entry points con nuevo prefab (21/11/2024).
 - Agregar fuegos en el grid e importar mouse Droid (22/11/2024).
+- Agregar modelos de Clones y de R2D2 (22/11/2024).
