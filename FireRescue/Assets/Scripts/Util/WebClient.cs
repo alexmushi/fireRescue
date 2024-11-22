@@ -7,9 +7,8 @@ using Newtonsoft.Json; // Install Newtonsoft.Json
 
 public class WebClient : MonoBehaviour
 {
-    public GameObject floorTile;
-    public GameObject wallPrefab;
-    public GameObject doorPrefab;
+    [SerializeField] private GameObject floorTile;
+    [SerializeField] private AddWallsManager addWallsManager;
 
     // IEnumerator - yield return
     IEnumerator SendDataStart(string data)
@@ -43,7 +42,7 @@ public class WebClient : MonoBehaviour
 
                     CreateGrid.CreateGridTiles(floorTile, gridTransform, gameData.width, gameData.height);
 
-                    AddWalls.AddWallsToCells(gameData.walls, wallPrefab, doorPrefab, gridContainer.transform, gameData.doors);
+                    addWallsManager.AddWallsToCells(gameData.walls, gridContainer.transform, gameData.doors, gameData.entry_points);
                 }
                 catch (System.Exception ex)
                 {

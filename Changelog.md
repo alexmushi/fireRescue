@@ -32,3 +32,4 @@
 - Arreglar paredes y el brillo para formar el mapa correctamente (21/11/2024).
 - Poner Puertas en el grid correctamente (21/11/2024).
 - Optimizar que las paredes y las puertas solo se renderizen una vez (21/11/2024).
+- Refactor para utilizar Singletons y agregar entry points con nuevo prefab (21/11/2024).
