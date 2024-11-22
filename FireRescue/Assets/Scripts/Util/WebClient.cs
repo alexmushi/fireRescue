@@ -9,6 +9,7 @@ public class WebClient : MonoBehaviour
 {
     public GameObject floorTile;
     public GameObject wallPrefab;
+    public GameObject doorPrefab;
 
     // IEnumerator - yield return
     IEnumerator SendDataStart(string data)
@@ -42,7 +43,7 @@ public class WebClient : MonoBehaviour
 
                     CreateGrid.CreateGridTiles(floorTile, gridTransform, gameData.width, gameData.height);
 
-                    AddWalls.AddWallsToCells(gameData.walls, wallPrefab, gridContainer.transform);
+                    AddWalls.AddWallsToCells(gameData.walls, wallPrefab, doorPrefab, gridContainer.transform, gameData.doors);
                 }
                 catch (System.Exception ex)
                 {

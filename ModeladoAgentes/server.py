@@ -3,9 +3,12 @@ import logging
 import json
 
 from model import FireRescueModel
-from util import serialize_doors, decimal_to_binary
+from util import serialize_doors
 
 model = FireRescueModel()
+
+model.print_map(model.walls.T, model.fires.data.T)
+print(serialize_doors(model.doors))
 
 class Server(BaseHTTPRequestHandler):
     
