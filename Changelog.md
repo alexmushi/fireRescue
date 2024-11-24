@@ -37,3 +37,4 @@
 - Agregar modelos de Clones y de R2D2 (22/11/2024).
 - Agregar modelo de Jedi Yoda (22/11/2024).
 - Agregar modelo de Anakin como Jedi (23/11/2024).
+- Agregar modelo de Dooku como Jedi (23/11/2024).
