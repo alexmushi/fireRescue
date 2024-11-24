@@ -158,6 +158,18 @@ class FireRescueAgent(Agent):
                 self.model.fires.set_cell(pos, 0)  # Remove smoke
                 self.storedAP -= self.COST_EXTINGUISH_SMOKE
 
+    def score_fires(self):
+        fires = self.model.get_all_fires()
+        fire_scores = {}
+        for fire_pos in fires:
+            cluster_size = self.model.get_fire_cluster_size(fire_pos)
+            distance_to_agent = self.heuristic(self.pos, fire_pos)
+            proximity_score = max(1, 10 - distance_to_agent)
+            total_score = cluster_size * proximity_score
+            fire_scores[fire_pos] = total_score
+        return fire_scores
+
+
     def move_to(self, pos, with_victim=False):
         move_cost = self.COST_MOVE_WITH_VICTIM if with_victim else self.COST_MOVE
 
