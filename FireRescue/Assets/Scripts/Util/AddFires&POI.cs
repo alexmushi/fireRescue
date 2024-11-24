@@ -1,11 +1,12 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-public class AddFires : MonoBehaviour
+public class AddFiresAndPOI : MonoBehaviour
 {
-    public static AddFires Instance { get; private set; }
+    public static AddFiresAndPOI Instance { get; private set; }
 
     [SerializeField] private GameObject firePrefab;
+    [SerializeField] private GameObject poiPrefab;
 
     private void Awake()
     {
@@ -38,6 +39,31 @@ public class AddFires : MonoBehaviour
                     GameObject fire = Instantiate(firePrefab, cell.transform.position, Quaternion.identity);
                     fire.transform.SetParent(cell.transform);
                     fire.name = "Fire at " + cellName;
+                }
+            }
+        }
+    }
+
+    public void AddPOIToCells(List<List<string>> points_of_interest, Transform gridParent)
+    {
+        int maxCol = points_of_interest.Count;
+        int maxRow = points_of_interest[0].Count;
+
+        for (int col = 0; col < maxCol; col++)
+        {
+            for (int row = 0; row < maxRow; row++)
+            {
+                string cellName = $"Cell({col},{row})";
+                GameObject cell = gridParent.Find(cellName)?.gameObject;
+
+                string poiType = points_of_interest[col][row];
+                if (poiType == "v" || poiType == "f")
+                {
+                    Vector3 position = cell.transform.position + new Vector3(0, 0.5f, 0);
+                    Quaternion rotation = Quaternion.Euler(-90, 0, 0);
+                    GameObject poi = Instantiate(poiPrefab, position, rotation);
+                    poi.transform.SetParent(cell.transform);
+                    poi.name = "POI at " + cellName;
                 }
             }
         }

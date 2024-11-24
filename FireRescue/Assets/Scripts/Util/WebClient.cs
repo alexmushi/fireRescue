@@ -9,7 +9,7 @@ public class WebClient : MonoBehaviour
 {
     [SerializeField] private GameObject floorTile;
     [SerializeField] private AddWallsManager addWallsManager;
-    [SerializeField] private AddFires addFiresManager;
+    [SerializeField] private AddFiresAndPOI addFiresAndPOIManager;
 
     // IEnumerator - yield return
     IEnumerator SendDataStart(string data)
@@ -45,7 +45,9 @@ public class WebClient : MonoBehaviour
 
                     addWallsManager.AddWallsToCells(gameData.walls, gridContainer.transform, gameData.doors, gameData.entry_points);
 
-                    addFiresManager.AddFiresToCells(gameData.fires, gridContainer.transform);
+                    addFiresAndPOIManager.AddFiresToCells(gameData.fires, gridContainer.transform);
+
+                    addFiresAndPOIManager.AddPOIToCells(gameData.points_of_interest, gridContainer.transform);
                 }
                 catch (System.Exception ex)
                 {

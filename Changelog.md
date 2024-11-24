@@ -42,3 +42,4 @@
 - Agregar modelo De Mando como Jedi (23/11/2024).
 - Agregar modelo de Ahsoka como Jedi (23/11/2024).
 - Cambiar nombre de carpeta de Ahsoka (23/11/2024).
+- Agregar POI sin revelar y el efecto de hover sobre ellos (23/11/2024).
