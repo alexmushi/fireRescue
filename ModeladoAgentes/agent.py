@@ -81,17 +81,21 @@ class FireRescueAgent(Agent):
                         else:
                             break  # Not enough AP to move
                 else:
-                    # Check if there is a victim at current cell
+                    # Check if there is a victim or POI at current cell
                     if self.model.is_victim_at(self.pos):
                         self.pick_up_victim()
                         action_performed = True
                         continue
+                    elif self.model.is_poi_at(self.pos):
+                        self.reveal_poi()
+                        action_performed = True
+                        continue
                     else:
-                        # Move towards nearest victim
+                        # Move towards nearest victim or POI
                         if self.storedAP >= self.COST_MOVE:
-                            target_pos = self.find_nearest_victim()
+                            target_pos = self.find_nearest_victim_or_poi()
                             if target_pos is None:
-                                break  # No victims left
+                                break  # No victims or POIs left
                             path = self.find_path_to(target_pos)
                             if len(path) > 1:
                                 next_step = path[1]
@@ -134,13 +138,14 @@ class FireRescueAgent(Agent):
         if self.model.is_victim_at(self.pos) and not self.hasVictim:
             self.hasVictim = True
             self.model.remove_victim(self.pos)
-            # No AP cost
+            print(f"Victim picked up at {self.pos}")
 
     def drop_victim(self):
         if self.hasVictim and self.model.is_exit(self.pos):
             self.hasVictim = False
             self.model.people_rescued += 1
-            # No AP cost
+            print(f"Victim dropped at exit {self.pos}")
+
     def extinguish_fire(self, pos):
         if self.storedAP >= self.COST_EXTINGUISH_FIRE:
             if not self.has_wall_between(self.pos, pos):
@@ -320,6 +325,40 @@ class FireRescueAgent(Agent):
                     heapq.heappush(queue, (cost + 1, neighbor))
         return None
     
+    def find_nearest_victim_or_poi(self):
+    # Find the nearest cell with a victim or POI
+        queue = [(0, self.pos)]
+        visited = set()
+        while queue:
+            cost, current_pos = heapq.heappop(queue)
+            if current_pos in visited:
+                continue
+            visited.add(current_pos)
+
+            if self.model.is_victim_at(current_pos) or self.model.is_poi_at(current_pos):
+                return current_pos
+
+            neighbors = self.model.grid.get_neighborhood(
+                current_pos,
+                moore=False,
+                include_center=False
+            )
+            for neighbor in neighbors:
+                if neighbor not in visited and self.can_move_between(current_pos, neighbor):
+                    heapq.heappush(queue, (cost + 1, neighbor))
+        return None
+    
+    def reveal_poi(self):
+        poi_type = self.model.reveal_poi_at(self.pos)
+        if poi_type == 'v':
+            print(f"Victim revealed at {self.pos}")
+            # Optionally pick up the victim immediately
+            self.pick_up_victim()
+        elif poi_type == 'f':
+            print(f"False alarm revealed at {self.pos}")
+
+
+        
     def find_path_to(self, target_pos, with_victim=False):
         # A* algorithm considering walls and doors
         open_set = []
