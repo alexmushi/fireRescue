@@ -41,3 +41,4 @@
 - Agregar modelo de Grievous como Jedi (23/11/2024).
 - Agregar modelo De Mando como Jedi (23/11/2024).
 - Agregar modelo de Ahsoka como Jedi (23/11/2024).
+- Cambiar nombre de carpeta de Ahsoka (23/11/2024).
