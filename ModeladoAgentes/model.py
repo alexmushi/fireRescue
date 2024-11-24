@@ -37,6 +37,11 @@ class FireRescueModel(Model):
 
         self.steps = 0
 
+        self.fire_targets = {}  # Maps agent IDs to fire positions
+
+        def is_fire_targeted(self, fire_pos):
+            return fire_pos in self.fire_targets.values()
+
         self.set_game_data("inputs.txt")
 
         for i in range(agents):
@@ -46,6 +51,7 @@ class FireRescueModel(Model):
             (x, y) = entry_point
             self.grid.place_agent(agent, (x, y))
             self.schedule.add(agent)
+            
 
     def set_game_data(self, archivo):
         walls, damage, points_of_interest, fires, doors, entry_points = get_game_variables(archivo)
@@ -157,6 +163,14 @@ class FireRescueModel(Model):
         y = random.randint(MIN_Y, MAX_Y)
 
         return (x, y)
+    
+    def is_fire_targeted(self, fire_pos):
+        # Check if any agent is targeting the fire at fire_pos
+        for agent in self.schedule.agents:
+            if isinstance(agent, FireRescueAgent) and agent.is_targeting_fire(fire_pos):
+                return True
+        return False
+
     
     def assign_new_points_of_interest(self):
 
@@ -545,7 +559,10 @@ class FireRescueModel(Model):
 
         self.check_missing_points_of_interest()
 
+
         self.steps += 1
+
+
 
 # Main execution
 """ if __name__ == "__main__":
