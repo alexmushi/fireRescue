@@ -548,6 +548,9 @@ class FireRescueModel(Model):
         return False
     
     def step(self):
+        print(f"--- Step {self.steps + 1} ---")
+        print(f"People Rescued: {self.people_rescued}, People Lost: {self.people_lost}, Damage: {self.damage_points}")
+
         if self.check_game_over():
             return
 
@@ -561,6 +564,8 @@ class FireRescueModel(Model):
 
 
         self.steps += 1
+
+        model.print_map(model.walls.T, model.fires.data.T)
 
 
 
@@ -585,17 +590,16 @@ class FireRescueModel(Model):
  """
 # Para checar los promedios de los pasos en varias simulaciones
 if __name__ == "__main__":
-    NUM_SIMULATIONS = 10
-    total_steps = 0
+    model = FireRescueModel()
+    print("Initial State:")
+    model.print_map(model.walls.T, model.fires.data.T)
 
-    for i in range(NUM_SIMULATIONS):
-        model = FireRescueModel()
+    while not model.people_rescued >= 7 and model.people_lost < 4 and model.damage_points < 24:
+        input("Press Enter for the next step...")
+        model.step()
 
-        while not model.check_game_over():
-            model.step()
-
-        print(f"Simulation {i + 1}: {model.steps} steps")
-        total_steps += model.steps
-
-    average_steps = total_steps / NUM_SIMULATIONS
-    print(f"\nAverage Steps Across {NUM_SIMULATIONS} Simulations: {average_steps}")
+    print("\nSimulation Ended")
+    print(f"Steps: {model.steps}")
+    print(f"People Rescued: {model.people_rescued}")
+    print(f"People Lost: {model.people_lost}")
+    print(f"Damage Points: {model.damage_points}")

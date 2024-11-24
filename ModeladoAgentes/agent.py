@@ -21,6 +21,7 @@ class FireRescueAgent(Agent):
         self.COST_OPEN_DOOR = 1    # Cost to open a door
 
     def step(self):
+        print(f"[Agent {self.unique_id}] Starting step with {self.storedAP} AP at position {self.pos}.")
         # 1. Gain action points at the beginning of the turn
         self.storedAP += self.AP_PER_TURN
         if self.storedAP > self.MAX_AP:
@@ -156,25 +157,28 @@ class FireRescueAgent(Agent):
         if self.model.is_victim_at(self.pos) and not self.hasVictim:
             self.hasVictim = True
             self.model.remove_victim(self.pos)
-            print(f"Victim picked up at {self.pos}")
+            print(f"[Agent {self.unique_id}] Picked up a victim at {self.pos}.")
 
     def drop_victim(self):
         if self.hasVictim and self.model.is_exit(self.pos):
             self.hasVictim = False
             self.model.people_rescued += 1
-            print(f"Victim dropped at exit {self.pos}")
+            print(f"[Agent {self.unique_id}] Dropped off a victim at exit {self.pos}.")
 
     def extinguish_fire(self, pos):
         if self.storedAP >= self.COST_EXTINGUISH_FIRE:
             if not self.has_wall_between(self.pos, pos):
                 self.model.fires.set_cell(pos, 0)  # Remove fire
                 self.storedAP -= self.COST_EXTINGUISH_FIRE
+                print(f"[Agent {self.unique_id}] Extinguished fire at {pos}.")
+
 
     def extinguish_smoke(self, pos):
         if self.storedAP >= self.COST_EXTINGUISH_SMOKE:
             if not self.has_wall_between(self.pos, pos):
                 self.model.fires.set_cell(pos, 0)  # Remove smoke
                 self.storedAP -= self.COST_EXTINGUISH_SMOKE
+                print(f"[Agent {self.unique_id}] Extinguished smoke at {pos}.")
 
     def score_fires(self):
         fires = self.model.get_all_fires()
