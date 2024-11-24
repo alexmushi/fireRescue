@@ -7,6 +7,7 @@ public class AddFiresAndPOI : MonoBehaviour
 
     [SerializeField] private GameObject firePrefab;
     [SerializeField] private GameObject poiPrefab;
+    [SerializeField] private GameObject smokePrefab;
 
     private void Awake()
     {
@@ -65,6 +66,31 @@ public class AddFiresAndPOI : MonoBehaviour
                     poi.transform.SetParent(cell.transform);
                     poi.name = "POI at " + cellName;
                 }
+            }
+        }
+    }
+
+    public void AddNewFiresAndSmokes(List<NewStatusDouble> fires, int width, int height, Transform gridParent) {
+
+        foreach (NewStatusDouble fire in fires)
+        {
+            int col = fire.position[0];
+            int row = fire.position[1];
+
+            string cellName = $"Cell({col},{row})";
+            GameObject cell = gridParent.Find(cellName)?.gameObject;
+
+            if (fire.new_value == 1)
+            {
+                GameObject newFire = Instantiate(firePrefab, cell.transform.position, Quaternion.identity);
+                newFire.transform.SetParent(cell.transform);
+                newFire.name = "Fire at " + cellName;
+            }
+            else if (fire.new_value == 0.5)
+            {
+                GameObject smoke = Instantiate(smokePrefab, cell.transform.position + new Vector3(0, 0.5f, 0), Quaternion.Euler(-90, 0, 0));
+                smoke.transform.SetParent(cell.transform);
+                smoke.name = "Smoke at " + cellName;
             }
         }
     }

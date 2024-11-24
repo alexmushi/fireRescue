@@ -43,3 +43,4 @@
 - Agregar modelo de Ahsoka como Jedi (23/11/2024).
 - Cambiar nombre de carpeta de Ahsoka (23/11/2024).
 - Agregar POI sin revelar y el efecto de hover sobre ellos (23/11/2024).
+- Agregar lista de cambios en modelo para poder recibirlos en unity (24/11/2024).

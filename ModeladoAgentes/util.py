@@ -59,6 +59,11 @@ def serialize_doors(doors):
 
     return doors_serialized
 
+def _serialize_door_position(door_key):
+        sorted_positions = sorted(door_key)
+
+        return [list(cell) for cell in sorted_positions]
+
 def get_game_variables(archivo):
     contenido = leer_archivo(archivo).strip().split("\n")
     index = 0

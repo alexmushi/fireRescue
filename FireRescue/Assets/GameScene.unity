@@ -149,6 +149,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   firePrefab: {fileID: 4587772772587275959, guid: 1d2389154077a4ccf86252d2fade8c68, type: 3}
+  poiPrefab: {fileID: 5147426673381728744, guid: 3663f7c4805ef477ca5660b50da50a37, type: 3}
+  smokePrefab: {fileID: 6654450794103269057, guid: 0d578bdcdb81d4082baffa2d7b2a7354, type: 3}
 --- !u!4 &127952719
 Transform:
   m_ObjectHideFlags: 0
@@ -363,7 +365,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   floorTile: {fileID: 1153733476952630636, guid: 389e6bca67fa54eb2a2ee9a9a4d5db1e, type: 3}
   addWallsManager: {fileID: 942549083}
-  addFiresManager: {fileID: 127952718}
+  addFiresAndPOIManager: {fileID: 127952718}
 --- !u!114 &1515615940
 MonoBehaviour:
   m_ObjectHideFlags: 0

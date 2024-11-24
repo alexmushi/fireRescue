@@ -9,7 +9,7 @@ public class Door
 }
 
 [System.Serializable]
-public class GameData 
+public class InitialGameData 
 {
     public int damage_points;
     public int people_lost;
