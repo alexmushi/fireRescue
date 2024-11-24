@@ -5,8 +5,9 @@ import math
 from util import decimal_to_binary
 
 class FireRescueAgent(Agent):
-    def __init__(self, model):
+    def __init__(self, model, is_rescuer=False):
         super().__init__(model)
+        self.is_rescuer = is_rescuer
         self.hasVictim = False
         self.AP_PER_TURN = 4     # Action points gained per turn
         self.MAX_AP = 8          # Maximum action points that can be stored
@@ -18,87 +19,94 @@ class FireRescueAgent(Agent):
         self.COST_OPEN_DOOR = 1    # Cost to open a door
 
     def step(self):
-        # 1. Gain action points at the beginning of the turn
-        self.storedAP += self.AP_PER_TURN
-        if self.storedAP > self.MAX_AP:
-            self.storedAP = self.MAX_AP
+        if self.is_rescuer:
+            self.storedAP += self.AP_PER_TURN
+            if self.storedAP > self.MAX_AP:
+                self.storedAP = self.MAX_AP
 
-        while self.storedAP > 0:
-            action_performed = False
+        # Agentes normales
+        else:
+            # 1. Gain action points at the beginning of the turn
+            self.storedAP += self.AP_PER_TURN
+            if self.storedAP > self.MAX_AP:
+                self.storedAP = self.MAX_AP
 
-            # 2. Attempt to extinguish fires and smokes in adjacent cells
-            neighbors = self.model.grid.get_neighborhood(
-                self.pos,
-                moore=False,  # Only cardinal directions
-                include_center=False
-            )
+            while self.storedAP > 0:
+                action_performed = False
 
-            for neighbor_pos in neighbors:
-                if self.has_wall_between(self.pos, neighbor_pos):
-                    continue
+                # 2. Attempt to extinguish fires and smokes in adjacent cells
+                neighbors = self.model.grid.get_neighborhood(
+                    self.pos,
+                    moore=False,  # Only cardinal directions
+                    include_center=False
+                )
 
-                fire_value = self.model.fires.data[neighbor_pos]
-                if fire_value == 1 and self.storedAP >= self.COST_EXTINGUISH_FIRE:
-                    self.extinguish_fire(neighbor_pos)
-                    action_performed = True
-                    break  # Extinguished a fire; check again
-                elif fire_value == 0.5 and self.storedAP >= self.COST_EXTINGUISH_SMOKE:
-                    self.extinguish_smoke(neighbor_pos)
-                    action_performed = True
-                    break  # Extinguished smoke; check again
+                for neighbor_pos in neighbors:
+                    if self.has_wall_between(self.pos, neighbor_pos):
+                        continue
 
-            if action_performed:
-                continue  # Go back to while loop to use storedAP
-
-            # 3. Attempt to open doors in adjacent cells if needed
-            for neighbor_pos in neighbors:
-                if self.storedAP >= self.COST_OPEN_DOOR:
-                    door_state = self.model.check_door(self.pos, neighbor_pos)
-                    if door_state == 'closed':
-                        self.model.open_door(self.pos, neighbor_pos)
-                        self.storedAP -= self.COST_OPEN_DOOR
+                    fire_value = self.model.fires.data[neighbor_pos]
+                    if fire_value == 1 and self.storedAP >= self.COST_EXTINGUISH_FIRE:
+                        self.extinguish_fire(neighbor_pos)
                         action_performed = True
-                        break  # Opened a door; check again
+                        break  # Extinguished a fire; check again
+                    elif fire_value == 0.5 and self.storedAP >= self.COST_EXTINGUISH_SMOKE:
+                        self.extinguish_smoke(neighbor_pos)
+                        action_performed = True
+                        break  # Extinguished smoke; check again
 
-            if action_performed:
-                continue  # Go back to while loop to use storedAP
+                if action_performed:
+                    continue  # Go back to while loop to use storedAP
 
-            # 4. Decide whether to move
-            # Agent only moves if it can perform an action after moving or has more than 4 AP
-            if self.storedAP >= self.COST_MOVE:
-                target_pos = self.find_nearest_fire()
-                if target_pos is None:
-                    break  # No fires left
-                path = self.find_path_to(target_pos)
-                if len(path) > 1:
-                    next_step = path[1]
-                    # Calculate the cost to move to next_step
-                    move_cost = self.calculate_move_cost(self.pos, next_step)
-                    if self.storedAP >= move_cost:
-                        # Calculate remaining AP after moving
-                        ap_after_move = self.storedAP - move_cost
-                        # From next_step, check if there is any action the agent can perform
-                        actions_available = self.check_actions_after_move(next_step, ap_after_move)
-                        if actions_available:
-                            # Proceed to move
-                            self.move_to(next_step)
+                # 3. Attempt to open doors in adjacent cells if needed
+                for neighbor_pos in neighbors:
+                    if self.storedAP >= self.COST_OPEN_DOOR:
+                        door_state = self.model.check_door(self.pos, neighbor_pos)
+                        if door_state == 'closed':
+                            self.model.open_door(self.pos, neighbor_pos)
+                            self.storedAP -= self.COST_OPEN_DOOR
                             action_performed = True
-                            continue  # After moving, check again
-                        else:
-                            if self.storedAP > 4:
-                                # Proceed to move anyway to reach 8 AP next turn
+                            break  # Opened a door; check again
+
+                if action_performed:
+                    continue  # Go back to while loop to use storedAP
+
+                # 4. Decide whether to move
+                # Agent only moves if it can perform an action after moving or has more than 4 AP
+                if self.storedAP >= self.COST_MOVE:
+                    target_pos = self.find_nearest_fire()
+                    if target_pos is None:
+                        break  # No fires left
+                    path = self.find_path_to(target_pos)
+                    if len(path) > 1:
+                        next_step = path[1]
+                        # Calculate the cost to move to next_step
+                        move_cost = self.calculate_move_cost(self.pos, next_step)
+                        if self.storedAP >= move_cost:
+                            # Calculate remaining AP after moving
+                            ap_after_move = self.storedAP - move_cost
+                            # From next_step, check if there is any action the agent can perform
+                            actions_available = self.check_actions_after_move(next_step, ap_after_move)
+                            if actions_available:
+                                # Proceed to move
                                 self.move_to(next_step)
                                 action_performed = True
                                 continue  # After moving, check again
                             else:
-                                # Do not move; save AP
-                                break
+                                if self.storedAP > 4:
+                                    # Proceed to move anyway to reach 8 AP next turn
+                                    self.move_to(next_step)
+                                    action_performed = True
+                                    continue  # After moving, check again
+                                else:
+                                    # Do not move; save AP
+                                    break
+                        else:
+                            break  # Not enough AP to move
                     else:
-                        break  # Not enough AP to move
+                        break  # Cannot move further
                 else:
-                    break  # Cannot move further
-            else:
-                break  # Not enough AP to move
+                    break  # Not enough AP to move
 
         # End of turn; any cleanup can be done here
 
