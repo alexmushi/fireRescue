@@ -13,7 +13,7 @@ from util import get_game_variables, decimal_to_binary, binary_to_decimal, get_w
 from agent import FireRescueAgent
 
 class FireRescueModel(Model):
-    def __init__(self, width=10, height=8, agents=6, seed=None):
+    def __init__(self, width=10, height=8, agents=1, seed=None):
         super().__init__(seed=seed)
         self.width = width
         self.height = height
@@ -39,10 +39,10 @@ class FireRescueModel(Model):
 
         self.fire_targets = {}  # Maps agent IDs to fire positions
 
-        self.set_game_data("inputs.txt")
+        self.set_game_data("BeachHouse.txt")
 
         for i in range(agents):
-            is_rescuer = i < 1
+            is_rescuer = i < -5
             agent = FireRescueAgent(self, is_rescuer=is_rescuer)
             entry_point = random.choice(self.entry_points)
             (x, y) = entry_point
@@ -111,10 +111,10 @@ class FireRescueModel(Model):
     def has_wall_between(self, pos1, pos2):
         door_state = self.check_door(pos1, pos2)
         if door_state in ['open', 'destroyed']:
-            print(f"No wall between {pos1} and {pos2} due to door state: {door_state}")
+            # print(f"No wall between {pos1} and {pos2} due to door state: {door_state}")
             return False  # No wall blocking because door is open or destroyed
         elif door_state == 'closed':
-            print(f"Wall between {pos1} and {pos2} because door is closed.")
+            # print(f"Wall between {pos1} and {pos2} because door is closed.")
             return True  # Wall is present because door is closed
         else:
             # No door exists; check walls normally
@@ -577,23 +577,36 @@ class FireRescueModel(Model):
         self.print_map(self.walls.T, self.fires.data.T)
 
 
-# Para checar los promedios de los pasos en varias simulaciones
-""" if __name__ == "__main__":
-    NUM_SIMULATIONS = 1
-    total_steps = 0
+# Para checar victorias en varias simulaciones
+"""
+if __name__ == "__main__":
+    NUM_SIMULATIONS = 10
+    victories = 0
+    losses = 0
 
     for i in range(NUM_SIMULATIONS):
+        print(f"\n=== Starting Simulation {i + 1} ===")
         model = FireRescueModel()
 
         while not model.check_game_over():
             model.step()
 
-        print(f"Simulation {i + 1}: {model.steps} steps")
-        total_steps += model.steps
+        # Check the result of the simulation
+        if model.people_rescued >= 7:
+            victories += 1
+            print(f"Simulation {i + 1}: Victory")
+        else:
+            losses += 1
+            print(f"Simulation {i + 1}: Loss")
+            print(f"People Rescued: {model.people_rescued}")
 
-    average_steps = total_steps / NUM_SIMULATIONS
-    print(f"\nAverage Steps Across {NUM_SIMULATIONS} Simulations: {average_steps}")
- """
+    # Final Results
+    print("\n=== Simulation Results ===")
+    print(f"Total Simulations: {NUM_SIMULATIONS}")
+    print(f"Victories: {victories}")
+    print(f"Losses: {losses}")
+
+"""
 # Debug mode
 if __name__ == "__main__":
     model = FireRescueModel()
@@ -609,3 +622,4 @@ if __name__ == "__main__":
     print(f"People Rescued: {model.people_rescued}")
     print(f"People Lost: {model.people_lost}")
     print(f"Damage Points: {model.damage_points}")
+ 

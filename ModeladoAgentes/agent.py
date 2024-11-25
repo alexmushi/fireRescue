@@ -12,7 +12,7 @@ class FireRescueAgent(Agent):
         self.hasVictim = False
         self.AP_PER_TURN = 4     # Action points gained per turn
         self.MAX_AP = 8          # Maximum action points that can be stored
-        self.storedAP = self.AP_PER_TURN  # Stored action points
+        self.storedAP = 0  # Stored action points
         self.COST_MOVE = 1
         self.COST_MOVE_WITH_VICTIM = 2
         self.COST_EXTINGUISH_SMOKE = 1
@@ -21,20 +21,22 @@ class FireRescueAgent(Agent):
         self.COST_OPEN_DOOR = 1    # Cost to open a door
 
     def step(self):
-        print(f"[Agent {self.unique_id}] Starting step with {self.storedAP} AP at position {self.pos}.")
 
         self.check_stun()
 
         self.validate_target_fire()
 
-        if self.target_fire:
-            print(f"[Agent {self.unique_id}] Targeting fire at {self.target_fire}.")
-        else:
-            print(f"[Agent {self.unique_id}] No current fire target.")
         # 1. Gain action points at the beginning of the turn
         self.storedAP += self.AP_PER_TURN
         if self.storedAP > self.MAX_AP:
             self.storedAP = self.MAX_AP
+
+        print(f"[Agent {self.unique_id}] Starting step with {self.storedAP} AP at position {self.pos}.")
+
+        if self.target_fire:
+            print(f"[Agent {self.unique_id}] Targeting fire at {self.target_fire}.")
+        else:
+            print(f"[Agent {self.unique_id}] No current fire target.")
 
         while self.storedAP > 0:
             action_performed = False
@@ -185,7 +187,7 @@ class FireRescueAgent(Agent):
             if not self.has_wall_between(self.pos, pos):
                 self.model.fires.set_cell(pos, 0)  # Remove fire
                 self.storedAP -= self.COST_EXTINGUISH_FIRE
-                print(f"[Agent {self.unique_id}] Extinguished fire at {pos}.")
+                print(f"[Agent {self.unique_id}] Extinguished fire at {pos}. Remaining AP: {self.storedAP}")
 
                 # Reset target if extinguished fire was the target
                 if self.target_fire == pos:
@@ -199,7 +201,7 @@ class FireRescueAgent(Agent):
             if not self.has_wall_between(self.pos, pos):
                 self.model.fires.set_cell(pos, 0)  # Remove smoke
                 self.storedAP -= self.COST_EXTINGUISH_SMOKE
-                print(f"[Agent {self.unique_id}] Extinguished smoke at {pos}.")
+                print(f"[Agent {self.unique_id}] Extinguished smoke at {pos}. Remaining AP: {self.storedAP}")
 
     def score_fires(self):
         fires = self.model.get_all_fires()
@@ -495,7 +497,7 @@ class FireRescueAgent(Agent):
                 else:
                     # No door; check for walls
                     if self.has_wall_between(current, neighbor):
-                        print(f"[Agent {self.unique_id}] Cannot move to {neighbor} from {current} due to wall.")
+                        # print(f"[Agent {self.unique_id}] Cannot move to {neighbor} from {current} due to wall.")
                         continue  # Skip if there's a wall without a door
                     move_cost = self.COST_MOVE  # Regular move cost
 
