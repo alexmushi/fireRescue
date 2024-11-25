@@ -565,7 +565,7 @@ class FireRescueModel(Model):
         for agent in self.schedule.agents:
             print(f"\n[Agent {agent.unique_id}] Step Begins")
             agent.step()
-            print(f"[Agent {agent.unique_id}] Step Ends")
+            print(f"[Agent {agent.unique_id}] Step Ends with remaining AP: {agent.storedAP}")
 
         self.assign_fire()
         

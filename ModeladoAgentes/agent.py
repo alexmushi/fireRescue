@@ -194,8 +194,6 @@ class FireRescueAgent(Agent):
                     print(f"[Agent {self.unique_id}] Resetting target as fire at {pos} was extinguished.")
                     self.target_fire = None
 
-
-
     def extinguish_smoke(self, pos):
         if self.storedAP >= self.COST_EXTINGUISH_SMOKE:
             if not self.has_wall_between(self.pos, pos):
@@ -203,6 +201,27 @@ class FireRescueAgent(Agent):
                 self.storedAP -= self.COST_EXTINGUISH_SMOKE
                 print(f"[Agent {self.unique_id}] Extinguished smoke at {pos}. Remaining AP: {self.storedAP}")
 
+    def check_and_extinguish(self, current_pos):
+        # Check the current cell
+        if self.model.fires.data[current_pos] == 1 and self.storedAP >= self.COST_EXTINGUISH_FIRE:
+            self.extinguish_fire(current_pos)
+        elif self.model.fires.data[current_pos] == 0.5 and self.storedAP >= self.COST_EXTINGUISH_SMOKE:
+            self.extinguish_smoke(current_pos)
+
+        # Check neighboring cells
+        neighbors = self.model.grid.get_neighborhood(
+            current_pos,
+            moore=False,  # Only cardinal directions
+            include_center=False
+        )
+        for neighbor_pos in neighbors:
+            fire_value = self.model.fires.data[neighbor_pos]
+            if fire_value == 1 and self.storedAP >= self.COST_EXTINGUISH_FIRE:
+                self.extinguish_fire(neighbor_pos)
+            elif fire_value == 0.5 and self.storedAP >= self.COST_EXTINGUISH_SMOKE:
+                self.extinguish_smoke(neighbor_pos)
+
+    
     def score_fires(self):
         fires = self.model.get_all_fires()
         fire_scores = {}
@@ -236,6 +255,8 @@ class FireRescueAgent(Agent):
             self.storedAP -= move_cost
             print(f"[Agent {self.unique_id}] Moved to {pos}. Remaining AP: {self.storedAP}.")
 
+            # Check current cell and adjacent cells for fire or smoke
+            self.check_and_extinguish(pos)
 
     def calculate_move_cost(self, from_pos, to_pos, with_victim=False):
         move_cost = self.COST_MOVE_WITH_VICTIM if with_victim else self.COST_MOVE
@@ -511,8 +532,6 @@ class FireRescueAgent(Agent):
 
         print(f"[Agent {self.unique_id}] No valid path found to {target_pos}.")
         return []  # Return an empty path if no valid path found
-
-
 
 
     def reconstruct_path(self, came_from, current):
