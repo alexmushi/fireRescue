@@ -44,7 +44,8 @@ class FireRescueModel(Model):
             'damage': [],
             'fires': [],
             'points_of_interest': [],
-            'doors': []
+            'doors': [], 
+            'explosions': []
         }
 
         for _ in range(agents):
@@ -256,6 +257,10 @@ class FireRescueModel(Model):
     
     def continue_explosion(self, explosion_base_pos, current_pos):
 
+        self.changes['explosions'].append({
+            'position': list(current_pos)
+        })
+
         (x, y) = current_pos
         (x_base, y_base) = explosion_base_pos
 
@@ -296,6 +301,10 @@ class FireRescueModel(Model):
 
     def explosion(self, pos):
         adjacent_with_no_walls, all_adjacent_cells = self.check_walls(pos, True)
+
+        self.changes['explosions'].append({
+            'position': list(pos)
+        })
 
         for adjacent in adjacent_with_no_walls:
             if self.fires.data[adjacent] == 0:

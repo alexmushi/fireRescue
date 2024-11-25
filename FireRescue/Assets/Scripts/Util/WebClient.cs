@@ -39,9 +39,8 @@ public class WebClient : MonoBehaviour
             {
                 string jsonResponse = www.downloadHandler.text;
 
-                try
-                {
-                    if (isInitialData) {
+                if (isInitialData) {
+                    try {
                         // Deserialize JSON and create grid
                         InitialGameData gameData = JsonConvert.DeserializeObject<InitialGameData>(jsonResponse);
 
@@ -57,25 +56,42 @@ public class WebClient : MonoBehaviour
                         addFiresAndPOIManager.AddPOIToCells(gameData.points_of_interest, gridContainer.transform);
 
                         isInitialData = false;
-                    } else {
-                        NewGameData gameData = JsonConvert.DeserializeObject<NewGameData>(jsonResponse);
-
-                        GameObject gridContainer = GameObject.Find("GameGrid")?.gameObject;
-                        Transform gridTransform = gridContainer.transform;
-
-                        addFiresAndPOIManager.AddNewFiresAndSmokes(gameData.fires, gameData.width, gameData.height, gridTransform);
-
-                        requestNewData = gameData.simulation_finished;
                     }
-                }
-                catch (System.Exception ex)
-                {
-                    Debug.LogError($"JSON Deserialization Error: {ex.Message}");
+                    catch (System.Exception ex)
+                    {
+                        Debug.LogError($"JSON Deserialization Error: {ex.Message}");
+                    }
+                } else {
+                    NewGameData gameData = null;
+                    try {
+                        gameData = JsonConvert.DeserializeObject<NewGameData>(jsonResponse);
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Debug.LogError($"JSON Deserialization Error: {ex.Message}");
+                    }
+
+                    GameObject gridContainer = GameObject.Find("GameGrid")?.gameObject;
+                    Transform gridTransform = gridContainer.transform;
+
+                    yield return StartCoroutine(addFiresAndPOIManager.Explosion(
+                        gameData.explosions, 
+                        gameData.fires, 
+                        gameData.walls, 
+                        gameData.damage, 
+                        gameData.doors, 
+                        gameData.width, 
+                        gameData.height, 
+                        gridTransform));
+
+                    yield return StartCoroutine(addFiresAndPOIManager.AddNewFiresAndSmokes(gameData.fires, gameData.width, gameData.height, gridTransform));
+
+                    requestNewData = gameData.simulation_finished;
+                    requestNewData = false;
                 }
             }
         }
         isSendingData = false;
-        requestNewData = false;
     }
 
     // Start is called before the first frame update
@@ -89,7 +105,7 @@ public class WebClient : MonoBehaviour
     void Update()
     {
         string json = "{}";
-        if (requestNewData && !isSendingData) {
+        if (requestNewData == true && isSendingData == false) {
             StartCoroutine(SendData(json));
         }
     }

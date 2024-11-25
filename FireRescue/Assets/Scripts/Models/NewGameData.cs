@@ -13,6 +13,7 @@ public class NewGameData
     public List<NewStatusIntList> damage;
     public List<NewStatusString> points_of_interest;
     public List<NewStatusDoors> doors; 
+    public List<NewExplosion> explosions;
     public bool simulation_finished;
 }
 
@@ -49,4 +50,10 @@ public class NewStatusDoors
 {
     public List<List<int>> position;
     public string new_value;
+}
+
+[System.Serializable]
+public class NewExplosion
+{
+    public List<int> position;
 }

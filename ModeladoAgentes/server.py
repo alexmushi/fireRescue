@@ -49,6 +49,7 @@ class Server(BaseHTTPRequestHandler):
                 "damage": model.changes["damage"],
                 "points_of_interest": model.changes["points_of_interest"],
                 "doors": model.changes["doors"], 
+                "explosions": model.changes["explosions"],
                 "simulation_finished": model.simulationFinished
             }
             print(model.changes)
