@@ -237,6 +237,15 @@ class FireRescueAgent(Agent):
     def move_to(self, pos, with_victim=False):
         move_cost = self.COST_MOVE_WITH_VICTIM if with_victim else self.COST_MOVE
 
+        fire_value = self.model.fires.data[pos]
+        if fire_value == 1:  # Fire detected
+            if self.storedAP >= self.COST_EXTINGUISH_FIRE:
+                print(f"[Agent {self.unique_id}] Fire detected at {pos}. Extinguishing it before moving.")
+                self.extinguish_fire(pos)
+            else:
+                print(f"[Agent {self.unique_id}] Cannot move to {pos} due to fire. Not enough AP to extinguish and avoid being stunned.")
+                return  # Do not move to the cell
+
         if self.storedAP >= move_cost:
             door_state = self.model.check_door(self.pos, pos)
             if door_state == 'closed':

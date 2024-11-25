@@ -342,10 +342,15 @@ class FireRescueModel(Model):
         self.check_victim_in_fire(pos)
 
     def check_victim_in_fire(self, pos):
-        if self.is_victim_at(pos):
-            # Remove victim
-            self.remove_victim(pos)
+        poi = self.points_of_interest.data[pos]
+        if poi == 'v':  # Victim
             self.people_lost += 1
+            print(f"[ALERT] Victim lost at {pos} due to fire.")
+            self.points_of_interest.set_cell(pos, '')  # Remove victim POI
+        elif poi == 'f':  # False Alarm
+            print(f"[INFO] False alarm at {pos} removed by fire.")
+            self.points_of_interest.set_cell(pos, '')  # Remove false alarm POI
+
 
     def assign_fire(self):
         (x, y) = self.select_random_internal_cell()
@@ -439,9 +444,6 @@ class FireRescueModel(Model):
         return None
 
 
-    def remove_victim(self, pos):
-        if self.is_victim_at(pos):
-            self.points_of_interest.set_cell(pos, '')
 
     def is_exit(self, pos):
         return pos in self.entry_points
@@ -502,6 +504,8 @@ class FireRescueModel(Model):
                     cell_content = ' S '
                 elif poi == 'v':
                     cell_content = ' V '
+                elif poi == 'f':
+                    cell_content = ' B '
                 elif agent_here:
                     cell_content = ' A '
                 else:
