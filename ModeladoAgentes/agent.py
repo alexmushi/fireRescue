@@ -23,6 +23,10 @@ class FireRescueAgent(Agent):
     def step(self):
         print(f"[Agent {self.unique_id}] Starting step with {self.storedAP} AP at position {self.pos}.")
 
+        self.check_stun()
+
+        self.validate_target_fire()
+
         if self.target_fire:
             print(f"[Agent {self.unique_id}] Targeting fire at {self.target_fire}.")
         else:
@@ -34,6 +38,12 @@ class FireRescueAgent(Agent):
 
         while self.storedAP > 0:
             action_performed = False
+
+            # If there is smoke at the current cell, extinguish it
+            if self.model.fires.data[self.pos] == 0.5 and self.storedAP >= self.COST_EXTINGUISH_SMOKE:
+                self.extinguish_smoke(self.pos)
+                action_performed = True
+                continue
 
             # 2. Attempt to extinguish fires and smokes in adjacent cells
             neighbors = self.model.grid.get_neighborhood(
@@ -155,8 +165,8 @@ class FireRescueAgent(Agent):
                 else:
                     break  # Not enough AP to move
 
-            if not action_performed:
-                break  # No action can be performed; end turn
+            if not action_performed or self.storedAP <= 0:
+                break
 
     def pick_up_victim(self):
         if self.model.is_victim_at(self.pos) and not self.hasVictim:
@@ -176,6 +186,12 @@ class FireRescueAgent(Agent):
                 self.model.fires.set_cell(pos, 0)  # Remove fire
                 self.storedAP -= self.COST_EXTINGUISH_FIRE
                 print(f"[Agent {self.unique_id}] Extinguished fire at {pos}.")
+
+                # Reset target if extinguished fire was the target
+                if self.target_fire == pos:
+                    print(f"[Agent {self.unique_id}] Resetting target as fire at {pos} was extinguished.")
+                    self.target_fire = None
+
 
 
     def extinguish_smoke(self, pos):
@@ -309,7 +325,10 @@ class FireRescueAgent(Agent):
         fire_pos = self.find_highest_priority_fire()
         if fire_pos:
             self.target_fire = fire_pos
-    
+            print(f"[Agent {self.unique_id}] Assigned new fire target at {fire_pos}.")
+        else:
+            print(f"[Agent {self.unique_id}] No fires left to target.")
+
     def is_targeting_fire(self, fire_pos):
         # Check if this agent is targeting the given fire
         return hasattr(self, "target_fire") and self.target_fire == fire_pos
@@ -383,6 +402,50 @@ class FireRescueAgent(Agent):
                 if neighbor not in visited and self.can_move_between(current_pos, neighbor):
                     heapq.heappush(queue, (cost + 1, neighbor))
         return None
+    
+    def check_stun(self):
+        # Check if the agent is in the same cell as a fire
+        if self.model.fires.data[self.pos] == 1:
+            print(f"[Agent {self.unique_id}] stunned at {self.pos}. Escaping to nearest entry point.")
+
+            # Find the nearest entry point
+            nearest_entry = self.find_nearest_entry_point()
+            if nearest_entry:
+                # Move instantly to the entry point
+                self.model.grid.move_agent(self, nearest_entry)
+                print(f"[Agent {self.unique_id}] Escaped to entry point at {nearest_entry}.")
+
+                # Check for fire at the entry point
+                if self.model.fires.data[nearest_entry] == 1:
+                    # Convert fire to smoke
+                    self.model.fires.set_cell(nearest_entry, 0.5)
+                    print(f"[Agent {self.unique_id}] Converted fire to smoke at entry point {nearest_entry}.")
+
+    def find_nearest_entry_point(self):
+        # Use A* or a simple breadth-first search to find the closest entry point
+        queue = [(0, self.pos)]
+        visited = set()
+        while queue:
+            cost, current_pos = heapq.heappop(queue)
+            if current_pos in visited:
+                continue
+            visited.add(current_pos)
+
+            # Check if this is an entry point
+            if self.model.is_exit(current_pos):
+                return current_pos
+
+            # Explore neighbors
+            neighbors = self.model.grid.get_neighborhood(
+                current_pos,
+                moore=False,
+                include_center=False
+            )
+            for neighbor in neighbors:
+                if neighbor not in visited and not self.has_wall_between(current_pos, neighbor):
+                    heapq.heappush(queue, (cost + 1, neighbor))
+        return None
+
     
     def reveal_poi(self):
         poi_type = self.model.reveal_poi_at(self.pos)
@@ -462,7 +525,12 @@ class FireRescueAgent(Agent):
                 count += 1
             current = next_step
         return count
-
+    
+    def validate_target_fire(self):
+    # Check if the current target is still a fire
+        if self.target_fire and self.model.fires.data[self.target_fire] != 1:
+            print(f"[Agent {self.unique_id}] Target fire at {self.target_fire} is no longer valid.")
+            self.target_fire = None
 
     def heuristic(self, a, b):
         # Manhattan distance
