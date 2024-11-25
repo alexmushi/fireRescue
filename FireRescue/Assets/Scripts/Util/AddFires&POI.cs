@@ -173,7 +173,7 @@ public class AddFiresAndPOI : MonoBehaviour
 
                 Destroy(doorObject, 1.5f); 
 
-                yield return new WaitForSeconds(0.5f);
+                yield return new WaitForSeconds(1.5f);
             }
         }
     }
@@ -235,7 +235,7 @@ public class AddFiresAndPOI : MonoBehaviour
 
                         Destroy(wallObject, 1.5f); 
 
-                        yield return new WaitForSeconds(0.5f);
+                        yield return new WaitForSeconds(1.5f);
                     }
                 }
 
@@ -246,26 +246,34 @@ public class AddFiresAndPOI : MonoBehaviour
 
     private IEnumerator ExplosionPlaceFire(List<NewStatusDouble> fires, int expCol, int expRow, Transform gridParent) {
 
-        foreach (NewStatusDouble fire in fires)
+        for (int i = fires.Count - 1; i >= 0; i--)
         {
+            NewStatusDouble fire = fires[i];
+            int fireCol = fire.position[0];
+            int fireRow = fire.position[1];
+            
             // Up
-            if (fire.position[0] == expCol && fire.position[1] == expRow - 1) {
+            if (fireCol == expCol && fireRow == expRow - 1) {
                 placeFireCoordinate(fire, expCol, expRow - 1, gridParent);
+                fires.RemoveAt(i);
                 yield return new WaitForSeconds(0.5f);
             }
             // Left
-            else if (fire.position[0] == expCol - 1 && fire.position[1] == expRow) {
+            else if (fireCol == expCol - 1 && fireRow == expRow) {
                 placeFireCoordinate(fire, expCol - 1, expRow, gridParent);
+                fires.RemoveAt(i);
                 yield return new WaitForSeconds(0.5f);
             }
             // Down
-            else if (fire.position[0] == expCol && fire.position[1] == expRow + 1) {
+            else if (fireCol == expCol && fireRow == expRow + 1) {
                 placeFireCoordinate(fire, expCol, expRow + 1, gridParent);
+                fires.RemoveAt(i);
                 yield return new WaitForSeconds(0.5f);
             }
             // Right
-            else if (fire.position[0] == expCol + 1 && fire.position[1] == expRow) {
+            else if (fireCol == expCol + 1 && fireRow == expRow) {
                 placeFireCoordinate(fire, expCol + 1, expRow, gridParent);
+                fires.RemoveAt(i);
                 yield return new WaitForSeconds(0.5f);
             }
         }

@@ -84,7 +84,7 @@ public class WebClient : MonoBehaviour
                         gameData.height, 
                         gridTransform));
 
-                    // yield return StartCoroutine(addFiresAndPOIManager.AddNewFiresAndSmokes(gameData.fires, gameData.width, gameData.height, gridTransform));
+                    yield return StartCoroutine(addFiresAndPOIManager.AddNewFiresAndSmokes(gameData.fires, gameData.width, gameData.height, gridTransform));
 
                     requestNewData = gameData.simulation_finished;
                     requestNewData = false;
