@@ -13,7 +13,7 @@ from util import get_game_variables, decimal_to_binary, binary_to_decimal, get_w
 from agent import FireRescueAgent
 
 class FireRescueModel(Model):
-    def __init__(self, width=10, height=8, agents=6, seed=None):
+    def __init__(self, width=10, height=8, agents=1, seed=None):
         super().__init__(seed=seed)
         self.width = width
         self.height = height
@@ -45,7 +45,7 @@ class FireRescueModel(Model):
         self.set_game_data("inputs.txt")
 
         for i in range(agents):
-            is_rescuer = i < 1
+            is_rescuer = i < -1
             agent = FireRescueAgent(self, is_rescuer=is_rescuer)
             entry_point = random.choice(self.entry_points)
             (x, y) = entry_point
@@ -548,46 +548,28 @@ class FireRescueModel(Model):
         return False
     
     def step(self):
-        print(f"--- Step {self.steps + 1} ---")
+        print(f"[DEBUG] Executing model step {self.steps}")
+        print(f"--- Step {self.steps } ---")
         print(f"People Rescued: {self.people_rescued}, People Lost: {self.people_lost}, Damage: {self.damage_points}")
 
         if self.check_game_over():
             return
 
-        self.schedule.step()
+        for agent in self.schedule.agents:
+            print(f"\n[Agent {agent.unique_id}] Step Begins")
+            agent.step()
+            print(f"[Agent {agent.unique_id}] Step Ends")
 
         self.assign_fire()
         
         self.check_smoke()
 
         self.check_missing_points_of_interest()
+        
+
+        self.print_map(self.walls.T, self.fires.data.T)
 
 
-        self.steps += 1
-
-        model.print_map(model.walls.T, model.fires.data.T)
-
-
-
-# Main execution
-""" if __name__ == "__main__":
-    model = FireRescueModel()
-
-    print("Initial Map:")
-    model.print_map(model.walls.T, model.fires.data.T)
-
-    while not model.check_game_over():
-        model.step()
-
-    print("\nFinal Map:")
-    model.print_map(model.walls.T, model.fires.data.T)
-
-    print("\nSimulation Results:")
-    print("Damage Points:", model.damage_points)
-    print("People Rescued:", model.people_rescued)
-    print("People Lost:", model.people_lost)
-    print("Total Steps:", model.steps)
- """
 # Para checar los promedios de los pasos en varias simulaciones
 if __name__ == "__main__":
     model = FireRescueModel()

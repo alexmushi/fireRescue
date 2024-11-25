@@ -22,6 +22,11 @@ class FireRescueAgent(Agent):
 
     def step(self):
         print(f"[Agent {self.unique_id}] Starting step with {self.storedAP} AP at position {self.pos}.")
+
+        if self.target_fire:
+            print(f"[Agent {self.unique_id}] Targeting fire at {self.target_fire}.")
+        else:
+            print(f"[Agent {self.unique_id}] No current fire target.")
         # 1. Gain action points at the beginning of the turn
         self.storedAP += self.AP_PER_TURN
         if self.storedAP > self.MAX_AP:
