@@ -175,11 +175,13 @@ class FireRescueAgent(Agent):
             self.hasVictim = True
             self.model.remove_victim(self.pos)
             print(f"[Agent {self.unique_id}] Picked up a victim at {self.pos}.")
+            
 
     def drop_victim(self):
         if self.hasVictim and self.model.is_exit(self.pos):
             self.hasVictim = False
             self.model.people_rescued += 1
+
             print(f"[Agent {self.unique_id}] Dropped off a victim at exit {self.pos}.")
 
     def extinguish_fire(self, pos):
@@ -246,6 +248,12 @@ class FireRescueAgent(Agent):
                 print(f"[Agent {self.unique_id}] Cannot move to {pos} due to fire. Not enough AP to extinguish and avoid being stunned.")
                 return  # Do not move to the cell """
 
+        door_state = self.model.check_door(self.pos, pos)
+        if door_state == 'closed' and self.storedAP >= self.COST_OPEN_DOOR:
+            print(f"[Agent {self.unique_id}] Opening door at {pos}.")
+            self.model.open_door(self.pos, pos)
+            self.storedAP -= self.COST_OPEN_DOOR
+        
         if self.storedAP >= move_cost:
             door_state = self.model.check_door(self.pos, pos)
             if door_state == 'closed':

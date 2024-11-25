@@ -12,7 +12,7 @@ from util import get_game_variables, decimal_to_binary, binary_to_decimal, get_w
 from agent import FireRescueAgent
 
 class FireRescueModel(Model):
-    def __init__(self, width=10, height=8, agents=60, seed=None):
+    def __init__(self, width=10, height=8, agents=6, seed=None):
         super().__init__(seed=seed)
         self.width = width
         self.height = height
@@ -40,7 +40,7 @@ class FireRescueModel(Model):
         self.set_game_data("BeachHouse.txt")
 
         for i in range(agents):
-            is_rescuer = i < 20
+            is_rescuer = i < 4
             agent = FireRescueAgent(self, is_rescuer=is_rescuer)
             entry_point = random.choice(self.entry_points)
             (x, y) = entry_point
@@ -183,6 +183,9 @@ class FireRescueModel(Model):
             possible_poi.append('f')
         if self.victims > 0:
             possible_poi.append('v')
+
+        if len(possible_poi) == 0:
+            return
         
         chosen_poi = random.choice(possible_poi)
 
@@ -196,8 +199,14 @@ class FireRescueModel(Model):
             self.victims -= 1
         
     def check_missing_points_of_interest(self):
+        countVictims = 0
+        for agent in self.agents:
+            if agent.hasVictim == True:
+                countVictims += 1
+                print (f"Numero de victimas agarradas: {countVictims}")
+        
         non_empty_count = np.count_nonzero(self.points_of_interest.data != '')
-        if non_empty_count < 3:
+        if non_empty_count + countVictims < 3:
             self.assign_new_points_of_interest()
     
     def destroy_wall(self, pos, wall_index_to_destroy):
@@ -357,21 +366,26 @@ class FireRescueModel(Model):
     def convert_smoke_to_fire(self, pos):
         possible_positions, all_adjacent_cells = self.check_walls(pos, True)
 
-        for current_position in possible_positions:
+        for position in range(len(possible_positions)):
+            current_position = possible_positions[position]
             fire_position = self.fires.data[current_position]
             if fire_position == 1:
                 self.set_fire_at(pos)
                 break
         
+        cells_with_walls = []
         for cell in all_adjacent_cells:
             if cell not in possible_positions:
-                if self.check_door(pos, cell) is not None:
-                    door_state = self.check_door(pos, cell)
-                    fire_position = self.fires.data[cell]
-                    if door_state == 'open':
-                        if fire_position == 1:
-                            self.set_fire_at(pos)
-                            break
+                cells_with_walls.append(cell)
+        
+        for cell in cells_with_walls:
+            if self.check_door(pos, cell) is not None:
+                door_state = self.check_door(pos, cell)
+                fire_position = self.fires.data[cell]
+                if door_state == 'open':
+                    if fire_position == 1:
+                        self.set_fire_at(pos)
+                        break
 
     def check_smoke(self):
         cells_with_smoke = self.fires.select_cells(lambda x: x == 0.5)
@@ -564,19 +578,28 @@ class FireRescueModel(Model):
             print(f"\n[Agent {agent.unique_id}] Step Begins")
             agent.step()
             print(f"[Agent {agent.unique_id}] Step Ends with remaining AP: {agent.storedAP}")
+            print(f"{model.false_alarms} False Alarms Remaining")
+            print(f"{model.victims} Victims Remaining at ")
+            print(f"Locations of Interest: \n{model.points_of_interest.data}")
+
+
+            
+            
             self.assign_fire()
             self.check_smoke()
             self.check_missing_points_of_interest()
 
+            
+        
         
         
 
         self.print_map(self.walls.T, self.fires.data.T)
 
 
-""" # Para checar victorias en varias simulaciones
+ # Para checar victorias en varias simulaciones
 if __name__ == "__main__":
-    NUM_SIMULATIONS = 10
+    NUM_SIMULATIONS = 1000
     victories = 0
     losses = 0
 
@@ -601,12 +624,11 @@ if __name__ == "__main__":
     print(f"Total Simulations: {NUM_SIMULATIONS}")
     print(f"Victories: {victories}")
     print(f"Losses: {losses}")
- """
 
 
 
 # Debug mode
-if __name__ == "__main__":
+""" if __name__ == "__main__":
     model = FireRescueModel()
     print("Initial State:")
     model.print_map(model.walls.T, model.fires.data.T)
@@ -619,4 +641,4 @@ if __name__ == "__main__":
     print(f"Steps: {model.steps}")
     print(f"People Rescued: {model.people_rescued}")
     print(f"People Lost: {model.people_lost}")
-    print(f"Damage Points: {model.damage_points}")
+    print(f"Damage Points: {model.damage_points}") """
