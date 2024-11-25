@@ -242,9 +242,9 @@ class FireRescueAgent(Agent):
             if self.storedAP >= self.COST_EXTINGUISH_FIRE:
                 print(f"[Agent {self.unique_id}] Fire detected at {pos}. Extinguishing it before moving.")
                 self.extinguish_fire(pos)
-            else:
+            """ else:
                 print(f"[Agent {self.unique_id}] Cannot move to {pos} due to fire. Not enough AP to extinguish and avoid being stunned.")
-                return  # Do not move to the cell
+                return  # Do not move to the cell """
 
         if self.storedAP >= move_cost:
             door_state = self.model.check_door(self.pos, pos)

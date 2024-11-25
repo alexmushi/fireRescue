@@ -1,7 +1,6 @@
 # Mesa imports
 from mesa import Model
 from mesa.space import MultiGrid, PropertyLayer
-from mesa.time import RandomActivation
 
 # NumPy imports
 import numpy as np
@@ -13,11 +12,10 @@ from util import get_game_variables, decimal_to_binary, binary_to_decimal, get_w
 from agent import FireRescueAgent
 
 class FireRescueModel(Model):
-    def __init__(self, width=10, height=8, agents=1, seed=None):
+    def __init__(self, width=10, height=8, agents=60, seed=None):
         super().__init__(seed=seed)
         self.width = width
         self.height = height
-        self.schedule = RandomActivation(self)
 
         self.points_of_interest = PropertyLayer(
             name="Points of Interest", width=width, height=height, default_value='', dtype=str)
@@ -42,12 +40,11 @@ class FireRescueModel(Model):
         self.set_game_data("BeachHouse.txt")
 
         for i in range(agents):
-            is_rescuer = i < -5
+            is_rescuer = i < 20
             agent = FireRescueAgent(self, is_rescuer=is_rescuer)
             entry_point = random.choice(self.entry_points)
             (x, y) = entry_point
             self.grid.place_agent(agent, (x, y))
-            self.schedule.add(agent)
             
 
     def set_game_data(self, archivo):
@@ -173,7 +170,7 @@ class FireRescueModel(Model):
     
     def is_fire_targeted(self, fire_pos):
         # Check if any agent is targeting the fire at fire_pos
-        for agent in self.schedule.agents:
+        for agent in self.agents:
             if isinstance(agent, FireRescueAgent) and agent.is_targeting_fire(fire_pos):
                 return True
         return False
@@ -187,28 +184,21 @@ class FireRescueModel(Model):
         if self.victims > 0:
             possible_poi.append('v')
         
-        if not possible_poi:
-            return  # No more POIs to assign
-
         chosen_poi = random.choice(possible_poi)
 
         (x, y) = self.select_random_internal_cell()
 
-        while self.points_of_interest.data[x, y] != '':
-            (x, y) = self.select_random_internal_cell()
-
-        self.points_of_interest.set_cell((x, y), chosen_poi)
+        self.points_of_interest.data[x, y] = chosen_poi
     
         if chosen_poi == 'f':
             self.false_alarms -= 1
         elif chosen_poi == 'v':
             self.victims -= 1
-    
+        
     def check_missing_points_of_interest(self):
         non_empty_count = np.count_nonzero(self.points_of_interest.data != '')
-        while non_empty_count < 3 and (self.false_alarms > 0 or self.victims > 0):
+        if non_empty_count < 3:
             self.assign_new_points_of_interest()
-            non_empty_count = np.count_nonzero(self.points_of_interest.data != '')
     
     def destroy_wall(self, pos, wall_index_to_destroy):
         current_wall_value = decimal_to_binary(int(self.walls[pos]))
@@ -443,7 +433,9 @@ class FireRescueModel(Model):
             return poi_type
         return None
 
-
+    def remove_victim(self, pos):
+        if self.is_victim_at(pos):
+            self.points_of_interest.set_cell(pos, '')
 
     def is_exit(self, pos):
         return pos in self.entry_points
@@ -566,23 +558,23 @@ class FireRescueModel(Model):
         if self.check_game_over():
             return
 
-        for agent in self.schedule.agents:
+        agents = list(self.agents)
+
+        for agent in agents:
             print(f"\n[Agent {agent.unique_id}] Step Begins")
             agent.step()
             print(f"[Agent {agent.unique_id}] Step Ends with remaining AP: {agent.storedAP}")
+            self.assign_fire()
+            self.check_smoke()
+            self.check_missing_points_of_interest()
 
-        self.assign_fire()
         
-        self.check_smoke()
-
-        self.check_missing_points_of_interest()
         
 
         self.print_map(self.walls.T, self.fires.data.T)
 
 
-# Para checar victorias en varias simulaciones
-"""
+""" # Para checar victorias en varias simulaciones
 if __name__ == "__main__":
     NUM_SIMULATIONS = 10
     victories = 0
@@ -609,15 +601,17 @@ if __name__ == "__main__":
     print(f"Total Simulations: {NUM_SIMULATIONS}")
     print(f"Victories: {victories}")
     print(f"Losses: {losses}")
+ """
 
-"""
+
+
 # Debug mode
 if __name__ == "__main__":
     model = FireRescueModel()
     print("Initial State:")
     model.print_map(model.walls.T, model.fires.data.T)
 
-    while not model.people_rescued >= 7 and model.people_lost < 4 and model.damage_points < 24:
+    while not model.check_game_over():
         input("Press Enter for the next step...")
         model.step()
 
@@ -626,4 +620,3 @@ if __name__ == "__main__":
     print(f"People Rescued: {model.people_rescued}")
     print(f"People Lost: {model.people_lost}")
     print(f"Damage Points: {model.damage_points}")
- 
