@@ -70,4 +70,38 @@ public class HelperFunctions : MonoBehaviour
         chars[index] = newChar;
         return new string(chars);
     }
+
+    public string GetDirectionName(int direction, string type, int col, int row)
+    {
+        switch (direction)
+        {
+            case 0:
+                return $"Up {type} at Cell({col},{row})";
+            case 1:
+                return $"Left {type} at Cell({col},{row})";
+            case 2:
+                return $"Down {type} at Cell({col},{row})";
+            case 3:
+                return $"Right {type} at Cell({col},{row})";
+            default:
+                return "unknown";
+        }
+    }
+
+    public Vector3 GetForceDirection(int direction)
+    {
+        switch (direction)
+        {
+            case 0:
+                return new Vector3(0, 0, -1);
+            case 1:
+                return new Vector3(-1, 0, 0);
+            case 2:
+                return new Vector3(0, 0, 1);
+            case 3:
+                return new Vector3(1, 0, 0);
+            default:
+                return Vector3.zero;
+        }
+    }
 }

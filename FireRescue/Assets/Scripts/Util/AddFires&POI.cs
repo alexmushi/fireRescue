@@ -142,19 +142,19 @@ public class AddFiresAndPOI : MonoBehaviour
             {
                 if (direction == 0) {
                     cellName = $"Cell({expCol},{expRow})";
-                    doorName = GetDirectionName(direction, "Door", expCol, expRow);
+                    doorName = HelperFunctions.Instance.GetDirectionName(direction, "Door", expCol, expRow);
                 }
                 else if (direction == 1) {
                     cellName = $"Cell({expCol - 1},{expRow})";
-                    doorName = GetDirectionName(direction, "Door", expCol - 1, expRow);
+                    doorName = HelperFunctions.Instance.GetDirectionName(direction, "Door", expCol - 1, expRow);
                 }
                 else if (direction == 2) {
                     cellName = $"Cell({expCol},{expRow - 1})";
-                    doorName = GetDirectionName(direction, "Door", expCol, expRow - 1);
+                    doorName = HelperFunctions.Instance.GetDirectionName(direction, "Door", expCol, expRow - 1);
                 }
                 else if (direction == 3) {
                     cellName = $"Cell({expCol},{expRow})";
-                    doorName = GetDirectionName(direction, "Door", expCol, expRow);
+                    doorName = HelperFunctions.Instance.GetDirectionName(direction, "Door", expCol, expRow);
                 }
 
                 GameObject cell = gridParent.Find(cellName)?.gameObject;
@@ -164,7 +164,7 @@ public class AddFiresAndPOI : MonoBehaviour
 
                 Rigidbody rb = doorObject.GetComponent<Rigidbody>();
 
-                Vector3 forceDirection = GetForceDirection(direction);
+                Vector3 forceDirection = HelperFunctions.Instance.GetForceDirection(direction);
 
                 float forceMagnitude = 30f; 
                 rb.AddForce(forceDirection * forceMagnitude);
@@ -173,7 +173,7 @@ public class AddFiresAndPOI : MonoBehaviour
 
                 Destroy(doorObject, 1.5f); 
 
-                yield return new WaitForSeconds(0.5f);
+                yield return new WaitForSeconds(1.5f);
             }
         }
     }
@@ -199,22 +199,22 @@ public class AddFiresAndPOI : MonoBehaviour
                         int newDirection = 0;
                         if (direction == 0) {
                             cellName = $"Cell({expCol},{expRow - 1})";
-                            wallName = GetDirectionName(2, "Wall", expCol, expRow - 1);
+                            wallName = HelperFunctions.Instance.GetDirectionName(2, "Wall", expCol, expRow - 1);
                             newDirection = 2;
                         }
                         else if (direction == 1) {
                             cellName = $"Cell({expCol - 1},{expRow})";
-                            wallName = GetDirectionName(3, "Wall", expCol - 1, expRow);
+                            wallName = HelperFunctions.Instance.GetDirectionName(3, "Wall", expCol - 1, expRow);
                             newDirection = 1;
                         }
                         else if (direction == 2) {
                             cellName = $"Cell({expCol},{expRow})";
-                            wallName = GetDirectionName(direction, "Wall", expCol, expRow);
+                            wallName = HelperFunctions.Instance.GetDirectionName(direction, "Wall", expCol, expRow);
                             newDirection = 0;
                         }
                         else if (direction == 3) {
                             cellName = $"Cell({expCol},{expRow})";
-                            wallName = GetDirectionName(direction, "Wall", expCol, expRow);
+                            wallName = HelperFunctions.Instance.GetDirectionName(direction, "Wall", expCol, expRow);
                             newDirection = 3;
                         }
 
@@ -225,7 +225,7 @@ public class AddFiresAndPOI : MonoBehaviour
 
                         Rigidbody rb = wallObject.GetComponent<Rigidbody>();
 
-                        Vector3 forceDirection = GetForceDirection(newDirection);
+                        Vector3 forceDirection = HelperFunctions.Instance.GetForceDirection(newDirection);
 
                         float forceMagnitude = 30f; 
                         wallObject.transform.position = wallObject.transform.position + new Vector3(0, 0.5f, 0);
@@ -235,7 +235,7 @@ public class AddFiresAndPOI : MonoBehaviour
 
                         Destroy(wallObject, 1.5f); 
 
-                        yield return new WaitForSeconds(0.5f);
+                        yield return new WaitForSeconds(1.5f);
                     }
                 }
 
@@ -246,26 +246,34 @@ public class AddFiresAndPOI : MonoBehaviour
 
     private IEnumerator ExplosionPlaceFire(List<NewStatusDouble> fires, int expCol, int expRow, Transform gridParent) {
 
-        foreach (NewStatusDouble fire in fires)
+        for (int i = fires.Count - 1; i >= 0; i--)
         {
+            NewStatusDouble fire = fires[i];
+            int fireCol = fire.position[0];
+            int fireRow = fire.position[1];
+            
             // Up
-            if (fire.position[0] == expCol && fire.position[1] == expRow - 1) {
+            if (fireCol == expCol && fireRow == expRow - 1) {
                 placeFireCoordinate(fire, expCol, expRow - 1, gridParent);
+                fires.RemoveAt(i);
                 yield return new WaitForSeconds(0.5f);
             }
             // Left
-            else if (fire.position[0] == expCol - 1 && fire.position[1] == expRow) {
+            else if (fireCol == expCol - 1 && fireRow == expRow) {
                 placeFireCoordinate(fire, expCol - 1, expRow, gridParent);
+                fires.RemoveAt(i);
                 yield return new WaitForSeconds(0.5f);
             }
             // Down
-            else if (fire.position[0] == expCol && fire.position[1] == expRow + 1) {
+            else if (fireCol == expCol && fireRow == expRow + 1) {
                 placeFireCoordinate(fire, expCol, expRow + 1, gridParent);
+                fires.RemoveAt(i);
                 yield return new WaitForSeconds(0.5f);
             }
             // Right
-            else if (fire.position[0] == expCol + 1 && fire.position[1] == expRow) {
+            else if (fireCol == expCol + 1 && fireRow == expRow) {
                 placeFireCoordinate(fire, expCol + 1, expRow, gridParent);
+                fires.RemoveAt(i);
                 yield return new WaitForSeconds(0.5f);
             }
         }
@@ -288,40 +296,6 @@ public class AddFiresAndPOI : MonoBehaviour
             GameObject smoke = UnityEngine.Object.Instantiate(smokePrefab, cell.transform.position + new Vector3(0, 0.1f, 0), Quaternion.Euler(-90, 0, 0));
             smoke.transform.SetParent(cell.transform);
             smoke.name = "Smoke at " + cellName;
-        }
-    }
-
-    private string GetDirectionName(int direction, string type, int col, int row)
-    {
-        switch (direction)
-        {
-            case 0:
-                return $"Up {type} at Cell({col},{row})";
-            case 1:
-                return $"Left {type} at Cell({col},{row})";
-            case 2:
-                return $"Down {type} at Cell({col},{row})";
-            case 3:
-                return $"Right {type} at Cell({col},{row})";
-            default:
-                return "unknown";
-        }
-    }
-
-    private Vector3 GetForceDirection(int direction)
-    {
-        switch (direction)
-        {
-            case 0:
-                return new Vector3(0, 0, -1);
-            case 1:
-                return new Vector3(-1, 0, 0);
-            case 2:
-                return new Vector3(0, 0, 1);
-            case 3:
-                return new Vector3(1, 0, 0);
-            default:
-                return Vector3.zero;
         }
     }
 }
