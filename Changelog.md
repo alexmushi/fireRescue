@@ -46,3 +46,4 @@
 - Agregar lista de cambios en modelo para poder recibirlos en unity (24/11/2024).
 - Agregar que desparezcan las puertas y paredes en las explosiones (24/11/2024).
 - Agregar prefab de smoke con script de movimiento (25/11/2024).
+- Agregar que se agreguen los fuegos despues de las explosiones en orden (25/11/2024).

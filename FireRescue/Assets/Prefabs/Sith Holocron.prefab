@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1001 &5453362823973625017
+--- !u!1001 &9015010535859877215
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -70,23 +70,23 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: c083c8aedc7614990a1db4dafd51ad2b, type: 3}
       insertIndex: -1
-      addedObject: {fileID: -4849907886279514363}
+      addedObject: {fileID: -4469891722317942061}
   m_SourcePrefab: {fileID: 100100000, guid: c083c8aedc7614990a1db4dafd51ad2b, type: 3}
---- !u!1 &5147426673381728744 stripped
+--- !u!1 &8204056040448837646 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: c083c8aedc7614990a1db4dafd51ad2b, type: 3}
-  m_PrefabInstance: {fileID: 5453362823973625017}
+  m_PrefabInstance: {fileID: 9015010535859877215}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &-4849907886279514363
+--- !u!114 &-4469891722317942061
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5147426673381728744}
+  m_GameObject: {fileID: 8204056040448837646}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f6dfeefa113b0416d8f28caf14994785, type: 3}
+  m_Script: {fileID: 11500000, guid: dcdc7564f0f0440b1880b87d282e7801, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   hoverHeight: 0.1

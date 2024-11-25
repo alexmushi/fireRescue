@@ -90,7 +90,7 @@ public class AddFiresAndPOI : MonoBehaviour
             }
             else if (fire.new_value == 0.5)
             {
-                GameObject smoke = UnityEngine.Object.Instantiate(smokePrefab, cell.transform.position + new Vector3(0, 0.5f, 0), Quaternion.Euler(-90, 0, 0));
+                GameObject smoke = UnityEngine.Object.Instantiate(smokePrefab, cell.transform.position + new Vector3(0, 0.1f, 0), Quaternion.Euler(-90, 0, 0));
                 smoke.transform.SetParent(cell.transform);
                 smoke.name = "Smoke at " + cellName;
             }
@@ -119,6 +119,8 @@ public class AddFiresAndPOI : MonoBehaviour
                 yield return StartCoroutine(ExplosionDoor(doors, expCol, expRow, gridParent));
 
                 yield return StartCoroutine(ExplosionWall(walls, expCol, expRow, gridParent));
+
+                yield return StartCoroutine(ExplosionPlaceFire(fires, expCol, expRow, gridParent));
             }
         }
 
@@ -240,6 +242,53 @@ public class AddFiresAndPOI : MonoBehaviour
             }
         }
         yield return null;
+    }
+
+    private IEnumerator ExplosionPlaceFire(List<NewStatusDouble> fires, int expCol, int expRow, Transform gridParent) {
+
+        foreach (NewStatusDouble fire in fires)
+        {
+            // Up
+            if (fire.position[0] == expCol && fire.position[1] == expRow - 1) {
+                placeFireCoordinate(fire, expCol, expRow - 1, gridParent);
+                yield return new WaitForSeconds(0.5f);
+            }
+            // Left
+            else if (fire.position[0] == expCol - 1 && fire.position[1] == expRow) {
+                placeFireCoordinate(fire, expCol - 1, expRow, gridParent);
+                yield return new WaitForSeconds(0.5f);
+            }
+            // Down
+            else if (fire.position[0] == expCol && fire.position[1] == expRow + 1) {
+                placeFireCoordinate(fire, expCol, expRow + 1, gridParent);
+                yield return new WaitForSeconds(0.5f);
+            }
+            // Right
+            else if (fire.position[0] == expCol + 1 && fire.position[1] == expRow) {
+                placeFireCoordinate(fire, expCol + 1, expRow, gridParent);
+                yield return new WaitForSeconds(0.5f);
+            }
+        }
+
+        yield return null;
+    }
+
+    private void placeFireCoordinate(NewStatusDouble fire, int col, int row, Transform gridParent) {
+        string cellName = $"Cell({col},{row})";
+        GameObject cell = gridParent.Find(cellName)?.gameObject;
+
+        if (fire.new_value == 1)
+        {
+            GameObject newFire = UnityEngine.Object.Instantiate(firePrefab, cell.transform.position, Quaternion.identity);
+            newFire.transform.SetParent(cell.transform);
+            newFire.name = "Fire at " + cellName;
+        }
+        else if (fire.new_value == 0.5)
+        {
+            GameObject smoke = UnityEngine.Object.Instantiate(smokePrefab, cell.transform.position + new Vector3(0, 0.1f, 0), Quaternion.Euler(-90, 0, 0));
+            smoke.transform.SetParent(cell.transform);
+            smoke.name = "Smoke at " + cellName;
+        }
     }
 
     private string GetDirectionName(int direction, string type, int col, int row)

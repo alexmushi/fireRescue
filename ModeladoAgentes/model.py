@@ -511,9 +511,9 @@ class FireRescueModel(Model):
             self.simulationFinished = True
             return
         
-        self.changes = { 'walls': [], 'fires': [], 'damage': [], 'points_of_interest': [], 'doors': [] }
+        self.changes = { 'walls': [], 'fires': [], 'damage': [], 'points_of_interest': [], 'doors': [], 'explosions': [] }
         
-        self.agents.shuffle_do("step")
+        # self.agents.shuffle_do("step")
 
         self.assign_fire()
         
