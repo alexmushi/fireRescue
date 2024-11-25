@@ -113,12 +113,16 @@ public class AddFiresAndPOI : MonoBehaviour
         {
             foreach (NewExplosion explosion in explosions)
             {
+                Shakes.Instance.TriggerShake();
+
                 int expCol = explosion.position[0];
                 int expRow = explosion.position[1];
 
                 yield return StartCoroutine(ExplosionDoor(doors, expCol, expRow, gridParent));
 
                 yield return StartCoroutine(ExplosionWall(walls, expCol, expRow, gridParent));
+
+                yield return StartCoroutine(ExplosionDamageWall(damage, expCol, expRow, gridParent));
 
                 yield return StartCoroutine(ExplosionPlaceFire(fires, expCol, expRow, gridParent));
             }
@@ -239,6 +243,53 @@ public class AddFiresAndPOI : MonoBehaviour
                     }
                 }
 
+            }
+        }
+        yield return null;
+    }
+
+    private IEnumerator ExplosionDamageWall(List<NewStatusIntList> damage, int expCol, int expRow, Transform gridParent) {
+        foreach (NewStatusIntList wall in damage)
+        {
+            if (wall.position[0] == expCol && wall.position[1] == expRow)
+            {
+                for (int i = 0; i < wall.new_value.Count; i++)
+                {
+                    int direction = wall.new_value[i];
+
+                    if (direction == 1) {
+                        string cellName = "";
+                        string wallName = "";
+
+                        if (i == 0) {
+                            cellName = $"Cell({expCol},{expRow - 1})";
+                            wallName = HelperFunctions.Instance.GetDirectionName(2, "Wall", expCol, expRow - 1);
+                        }
+                        else if (i == 1) {
+                            cellName = $"Cell({expCol - 1},{expRow})";
+                            wallName = HelperFunctions.Instance.GetDirectionName(3, "Wall", expCol - 1, expRow);
+                        }
+                        else if (i == 2) {
+                            cellName = $"Cell({expCol},{expRow})";
+                            wallName = HelperFunctions.Instance.GetDirectionName(2, "Wall", expCol, expRow);
+                        }
+                        else if (i == 3) {
+                            cellName = $"Cell({expCol},{expRow})";
+                            wallName = HelperFunctions.Instance.GetDirectionName(3, "Wall", expCol, expRow);
+                        }
+
+
+                        GameObject cell = gridParent.Find(cellName)?.gameObject;
+                        GameObject wallObject = cell.transform.Find(wallName)?.gameObject;
+
+                        if (wallObject == null) continue;
+
+                        Shakes.Instance.TriggerWallShake(wallObject.transform, 0.5f, 0.1f);
+
+                        yield return new WaitForSeconds(0.1f);
+                    }
+
+                }
             }
         }
         yield return null;

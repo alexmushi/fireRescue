@@ -37,9 +37,7 @@ class Server(BaseHTTPRequestHandler):
             }
             model.firstStep = False
         else:
-            model.explosion((2,3))
-            model.explosion((2,3))
-            model.explosion((2,3))
+            model.explosion((3,3))
             data = {
                 "damage_points": model.damage_points,
                 "people_lost": model.people_lost,

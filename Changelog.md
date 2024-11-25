@@ -50,4 +50,5 @@
 - Agregar que se agreguen los fuegos despues de las explosiones en orden (25/11/2024).
 - Asegurar que se elimine el fuego de la lista despues de colocarlo para evitar duplicados (25/11/2024).
 - Refactor para agregar dos funciones a helper functions (25/11/2024).
-- Agregar funcion de camara para jugador (25/11/2024).
+- Agregar función de camara para jugador (25/11/2024).
+- Agregar función de shake para la cámara como para la pared (25/11/2024).
