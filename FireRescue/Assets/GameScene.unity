@@ -150,7 +150,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   firePrefab: {fileID: 4587772772587275959, guid: 1d2389154077a4ccf86252d2fade8c68, type: 3}
   poiPrefab: {fileID: 5147426673381728744, guid: 3663f7c4805ef477ca5660b50da50a37, type: 3}
-  smokePrefab: {fileID: 6654450794103269057, guid: 0d578bdcdb81d4082baffa2d7b2a7354, type: 3}
+  smokePrefab: {fileID: 4317911819615672027, guid: c05651bb80c8d3b46a487dda9e77473e, type: 3}
 --- !u!4 &127952719
 Transform:
   m_ObjectHideFlags: 0
