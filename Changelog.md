@@ -48,3 +48,4 @@
 - Agregar prefab de smoke con script de movimiento (25/11/2024).
 - Agregar movimiento a modelo de fuego (25/11/2024).
 - Agregar que se agreguen los fuegos despues de las explosiones en orden (25/11/2024).
+- Agregar funcion de camara para jugador (25/11/2024).
