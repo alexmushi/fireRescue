@@ -217,33 +217,23 @@ class FireRescueAgent(Agent):
         move_cost = self.COST_MOVE_WITH_VICTIM if with_victim else self.COST_MOVE
 
         if self.storedAP >= move_cost:
-            if self.has_wall_between(self.pos, pos):
-                # Check if breaking the wall is the only way
-                if self.is_wall_break_necessary(self.pos, pos):
-                    if self.storedAP >= self.COST_DAMAGE_WALL + move_cost:
-                        # Damage the wall
-                        self.damage_wall(self.pos, pos)
-                        self.storedAP -= self.COST_DAMAGE_WALL
-                        # Move after damaging the wall
-                        self.model.grid.move_agent(self, pos)
-                        self.storedAP -= move_cost
+            door_state = self.model.check_door(self.pos, pos)
+            if door_state == 'closed':
+                # Open the door if there is enough AP
+                if self.storedAP >= self.COST_OPEN_DOOR:
+                    print(f"[Agent {self.unique_id}] Opening door between {self.pos} and {pos}.")
+                    self.model.open_door(self.pos, pos)
+                    self.storedAP -= self.COST_OPEN_DOOR
+                    door_state = 'open'
                 else:
-                    pass  # Do not break the wall if unnecessary
-            else:
-                # No wall
-                door_state = self.model.check_door(self.pos, pos)
-                if door_state == 'closed':
-                    if self.storedAP >= self.COST_OPEN_DOOR + move_cost:
-                        # Open the door
-                        self.model.open_door(self.pos, pos)
-                        self.storedAP -= self.COST_OPEN_DOOR
-                        # Move after opening the door
-                        self.model.grid.move_agent(self, pos)
-                        self.storedAP -= move_cost
-                else:
-                    # Door is open or no door
-                    self.model.grid.move_agent(self, pos)
-                    self.storedAP -= move_cost
+                    print(f"[Agent {self.unique_id}] Not enough AP to open door between {self.pos} and {pos}.")
+                    return
+
+            # Proceed with movement
+            self.model.grid.move_agent(self, pos)
+            self.storedAP -= move_cost
+            print(f"[Agent {self.unique_id}] Moved to {pos}. Remaining AP: {self.storedAP}.")
+
 
     def calculate_move_cost(self, from_pos, to_pos, with_victim=False):
         move_cost = self.COST_MOVE_WITH_VICTIM if with_victim else self.COST_MOVE
@@ -255,7 +245,6 @@ class FireRescueAgent(Agent):
             door_state = self.model.check_door(from_pos, to_pos)
             if door_state == 'closed':
                 cost += self.COST_OPEN_DOOR
-                cost += move_cost
             else:
                 cost += move_cost
         return cost
@@ -326,8 +315,11 @@ class FireRescueAgent(Agent):
         if fire_pos:
             self.target_fire = fire_pos
             print(f"[Agent {self.unique_id}] Assigned new fire target at {fire_pos}.")
+            # Register the target in the model to prevent other agents from targeting it
+            self.model.fire_targets[self.unique_id] = fire_pos
         else:
             print(f"[Agent {self.unique_id}] No fires left to target.")
+
 
     def is_targeting_fire(self, fire_pos):
         # Check if this agent is targeting the given fire
@@ -472,15 +464,12 @@ class FireRescueAgent(Agent):
             if not self.has_wall_between(from_pos, neighbor):
                 return False  # Found an alternative path
 
-        
     def find_path_to(self, target_pos, with_victim=False):
-        """
-        A* algorithm considering walls and doors, avoiding unnecessary wall-breaking.
-        """
         open_set = []
         heapq.heappush(open_set, (0, self.pos))
         came_from = {}
         g_score = {self.pos: 0}
+
         while open_set:
             _, current = heapq.heappop(open_set)
             if current == target_pos:
@@ -491,20 +480,37 @@ class FireRescueAgent(Agent):
                 moore=False,
                 include_center=False
             )
-            for neighbor in neighbors:
-                move_cost = self.calculate_move_cost(current, neighbor, with_victim)
 
-                # Skip paths requiring unnecessary wall-breaking
-                if self.has_wall_between(current, neighbor) and not self.is_wall_break_necessary(current, neighbor):
-                    continue
+            for neighbor in neighbors:
+                door_state = self.model.check_door(current, neighbor)
+
+                if door_state == 'closed':
+                    # Cost to open the door plus move
+                    move_cost = self.COST_OPEN_DOOR + self.COST_MOVE
+                    print(f"[Agent {self.unique_id}] Considering opening closed door between {current} and {neighbor}. Added cost: {self.COST_OPEN_DOOR}.")
+                elif door_state in ['open', 'destroyed']:
+                    # Only move cost
+                    move_cost = self.COST_MOVE
+                    print(f"[Agent {self.unique_id}] Moving through {door_state} door between {current} and {neighbor}. Move cost: {self.COST_MOVE}.")
+                else:
+                    # No door; check for walls
+                    if self.has_wall_between(current, neighbor):
+                        print(f"[Agent {self.unique_id}] Cannot move to {neighbor} from {current} due to wall.")
+                        continue  # Skip if there's a wall without a door
+                    move_cost = self.COST_MOVE  # Regular move cost
 
                 tentative_g_score = g_score[current] + move_cost
+
                 if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
                     came_from[neighbor] = current
                     g_score[neighbor] = tentative_g_score
                     f_score = tentative_g_score + self.heuristic(neighbor, target_pos)
                     heapq.heappush(open_set, (f_score, neighbor))
-        return []  # Return empty path if no valid path found
+
+        print(f"[Agent {self.unique_id}] No valid path found to {target_pos}.")
+        return []  # Return an empty path if no valid path found
+
+
 
 
     def reconstruct_path(self, came_from, current):
@@ -527,15 +533,19 @@ class FireRescueAgent(Agent):
         return count
     
     def validate_target_fire(self):
-    # Check if the current target is still a fire
+        # Check if the current target is still a fire
         if self.target_fire and self.model.fires.data[self.target_fire] != 1:
             print(f"[Agent {self.unique_id}] Target fire at {self.target_fire} is no longer valid.")
             self.target_fire = None
+            # Remove the target from model.fire_targets
+            if self.unique_id in self.model.fire_targets:
+                del self.model.fire_targets[self.unique_id]
+
 
     def heuristic(self, a, b):
         # Manhattan distance
         distance = abs(a[0] - b[0]) + abs(a[1] - b[1])
         # Add wall penalty
         walls_between = self.count_walls_between(a, b)
-        wall_penalty = walls_between * 5  # Adjust weight as needed
+        wall_penalty = walls_between * 3  # Adjust weight as needed
         return distance + wall_penalty

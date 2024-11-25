@@ -13,7 +13,7 @@ from util import get_game_variables, decimal_to_binary, binary_to_decimal, get_w
 from agent import FireRescueAgent
 
 class FireRescueModel(Model):
-    def __init__(self, width=10, height=8, agents=1, seed=None):
+    def __init__(self, width=10, height=8, agents=6, seed=None):
         super().__init__(seed=seed)
         self.width = width
         self.height = height
@@ -39,13 +39,10 @@ class FireRescueModel(Model):
 
         self.fire_targets = {}  # Maps agent IDs to fire positions
 
-        def is_fire_targeted(self, fire_pos):
-            return fire_pos in self.fire_targets.values()
-
         self.set_game_data("inputs.txt")
 
         for i in range(agents):
-            is_rescuer = i < -1
+            is_rescuer = i < 1
             agent = FireRescueAgent(self, is_rescuer=is_rescuer)
             entry_point = random.choice(self.entry_points)
             (x, y) = entry_point
@@ -112,25 +109,35 @@ class FireRescueModel(Model):
             return possible_positions
     
     def has_wall_between(self, pos1, pos2):
-        (x1, y1) = pos1
-        (x2, y2) = pos2
+        door_state = self.check_door(pos1, pos2)
+        if door_state in ['open', 'destroyed']:
+            print(f"No wall between {pos1} and {pos2} due to door state: {door_state}")
+            return False  # No wall blocking because door is open or destroyed
+        elif door_state == 'closed':
+            print(f"Wall between {pos1} and {pos2} because door is closed.")
+            return True  # Wall is present because door is closed
+        else:
+            # No door exists; check walls normally
+            (x1, y1) = pos1
+            (x2, y2) = pos2
 
-        difference_x = x2 - x1
-        difference_y = y2 - y1
+            difference_x = x2 - x1
+            difference_y = y2 - y1
 
-        direction = (difference_x, difference_y)
+            direction = (difference_x, difference_y)
 
-        walls = decimal_to_binary(int(self.walls[pos1]))
+            walls = decimal_to_binary(int(self.walls[pos1]))
 
-        if direction == (0, -1):
-            return walls[0] == '1'
-        elif direction == (-1, 0):
-            return walls[1] == '1'
-        elif direction == (0, 1):
-            return walls[2] == '1'
-        elif direction == (1, 0):
-            return walls[3] == '1'
-        return False
+            if direction == (0, -1):
+                return walls[0] == '1'
+            elif direction == (-1, 0):
+                return walls[1] == '1'
+            elif direction == (0, 1):
+                return walls[2] == '1'
+            elif direction == (1, 0):
+                return walls[3] == '1'
+            return False
+
 
     def check_door(self, cell1, cell2):
         door_key = frozenset([cell1, cell2])
@@ -571,6 +578,23 @@ class FireRescueModel(Model):
 
 
 # Para checar los promedios de los pasos en varias simulaciones
+""" if __name__ == "__main__":
+    NUM_SIMULATIONS = 1
+    total_steps = 0
+
+    for i in range(NUM_SIMULATIONS):
+        model = FireRescueModel()
+
+        while not model.check_game_over():
+            model.step()
+
+        print(f"Simulation {i + 1}: {model.steps} steps")
+        total_steps += model.steps
+
+    average_steps = total_steps / NUM_SIMULATIONS
+    print(f"\nAverage Steps Across {NUM_SIMULATIONS} Simulations: {average_steps}")
+ """
+# Debug mode
 if __name__ == "__main__":
     model = FireRescueModel()
     print("Initial State:")
