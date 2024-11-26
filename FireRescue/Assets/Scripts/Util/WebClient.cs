@@ -10,6 +10,7 @@ public class WebClient : MonoBehaviour
     [SerializeField] private GameObject floorTile;
     [SerializeField] private AddWallsManager addWallsManager;
     [SerializeField] private AddFiresAndPOI addFiresAndPOIManager;
+    [SerializeField] private AddAgents addAgentsManager;
 
     private bool isInitialData = true;
     private bool requestNewData = true;
@@ -40,27 +41,32 @@ public class WebClient : MonoBehaviour
                 string jsonResponse = www.downloadHandler.text;
 
                 if (isInitialData) {
+                    InitialGameData gameData = null;
                     try {
                         // Deserialize JSON and create grid
-                        InitialGameData gameData = JsonConvert.DeserializeObject<InitialGameData>(jsonResponse);
-
-                        GameObject gridContainer = new GameObject("GameGrid");
-                        Transform gridTransform = gridContainer.transform;
-
-                        CreateGrid.CreateGridTiles(floorTile, gridTransform, gameData.width, gameData.height);
-
-                        addWallsManager.AddWallsToCells(gameData.walls, gridContainer.transform, gameData.doors, gameData.entry_points);
-
-                        addFiresAndPOIManager.AddFiresToCells(gameData.fires, gridContainer.transform);
-
-                        addFiresAndPOIManager.AddPOIToCells(gameData.points_of_interest, gridContainer.transform);
-
-                        isInitialData = false;
+                        gameData = JsonConvert.DeserializeObject<InitialGameData>(jsonResponse);
                     }
                     catch (System.Exception ex)
                     {
                         Debug.LogError($"JSON Deserialization Error: {ex.Message}");
+                        requestNewData = false;
                     }
+
+                    GameObject gridContainer = new GameObject("GameGrid");
+                    Transform gridTransform = gridContainer.transform;
+
+                    CreateGrid.CreateGridTiles(floorTile, gridTransform, gameData.width, gameData.height);
+
+                    addWallsManager.AddWallsToCells(gameData.walls, gridTransform, gameData.doors, gameData.entry_points);
+
+                    addFiresAndPOIManager.AddFiresToCells(gameData.fires, gridTransform);
+
+                    addFiresAndPOIManager.AddPOIToCells(gameData.points_of_interest, gridTransform);
+
+                    yield return StartCoroutine(addAgentsManager.AddAgentsToCells(gameData.agent_positions, gridTransform));
+
+                    isInitialData = false;
+
                 } else {
                     NewGameData gameData = null;
                     try {
@@ -69,6 +75,7 @@ public class WebClient : MonoBehaviour
                     catch (System.Exception ex)
                     {
                         Debug.LogError($"JSON Deserialization Error: {ex.Message}");
+                        requestNewData = false;
                     }
 
                     GameObject gridContainer = GameObject.Find("GameGrid")?.gameObject;

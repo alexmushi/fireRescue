@@ -21,6 +21,10 @@ class FireRescueModel(Model):
         self.firstStep = True
         self.simulationFinished = False
 
+        self.datacollector = DataCollector(
+            agent_reporters={"Position": lambda a: a.pos}
+        )
+
         self.points_of_interest = PropertyLayer(
             name="Points of Interest", width=width, height=height, default_value='', dtype=str)
 
@@ -53,6 +57,8 @@ class FireRescueModel(Model):
             entry_point = random.choice(self.entry_points)
             (x, y) = entry_point
             self.grid.place_agent(agent, (x, y))
+        
+        self.datacollector.collect(self)
 
     def set_game_data(self, archivo):
         walls, damage, points_of_interest, fires, doors, entry_points = get_game_variables(archivo)
@@ -505,6 +511,24 @@ class FireRescueModel(Model):
             'position': serialized_position,
             'new_value': value
         })
+    
+    def get_all_agent_positions(self):
+        df = self.datacollector.get_agent_vars_dataframe()
+    
+        latest_step = df.index.get_level_values(0).max()
+        
+        # Extract agent positions at the latest step
+        latest_data = df.loc[latest_step]
+        
+        # Convert the Series to a list of dictionaries
+        agents = []
+        for agent_id, position in latest_data.iterrows():
+            agents.append({
+                "agentID": int(agent_id),
+                "position": list(position.iloc[0])
+            })
+
+        return agents
 
     def step(self):
         if self.check_game_over() == True:
@@ -513,6 +537,8 @@ class FireRescueModel(Model):
         
         self.changes = { 'walls': [], 'fires': [], 'damage': [], 'points_of_interest': [], 'doors': [], 'explosions': [] }
         
+        self.datacollector.collect(self)
+
         # self.agents.shuffle_do("step")
 
         self.assign_fire()

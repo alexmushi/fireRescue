@@ -31,9 +31,10 @@ class Server(BaseHTTPRequestHandler):
                 "height": model.height,
                 "walls": model.walls.tolist(),
                 "fires": model.fires.data.tolist(),
-                "points_of_interest": model.points_of_interest.data.T.tolist(),
+                "points_of_interest": model.points_of_interest.data.tolist(),
                 "doors": serialize_doors(model.doors),
-                "entry_points": model.entry_points
+                "entry_points": model.entry_points, 
+                "agent_positions": model.get_all_agent_positions()
             }
             model.firstStep = False
         else:
@@ -50,9 +51,9 @@ class Server(BaseHTTPRequestHandler):
                 "points_of_interest": model.changes["points_of_interest"],
                 "doors": model.changes["doors"], 
                 "explosions": model.changes["explosions"],
+                "agent_positions": model.get_all_agent_positions(),
                 "simulation_finished": model.simulationFinished
             }
-            print(model.changes)
             model.print_map(model.walls.T, model.fires.data.T)
 
         json_data = json.dumps(data)

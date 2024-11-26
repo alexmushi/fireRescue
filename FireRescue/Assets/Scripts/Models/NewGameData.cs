@@ -14,6 +14,7 @@ public class NewGameData
     public List<NewStatusString> points_of_interest;
     public List<NewStatusDoors> doors; 
     public List<NewExplosion> explosions;
+    public List<AgentPosition> agent_positions;
     public bool simulation_finished;
 }
 

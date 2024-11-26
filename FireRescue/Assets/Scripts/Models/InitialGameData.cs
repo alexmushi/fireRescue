@@ -9,6 +9,13 @@ public class Door
 }
 
 [System.Serializable]
+public class AgentPosition
+{
+    public int agentID;
+    public List<int> position;
+}   
+
+[System.Serializable]
 public class InitialGameData 
 {
     public int damage_points;
@@ -20,5 +27,6 @@ public class InitialGameData
     public List<List<double>> fires;
     public List<List<string>> points_of_interest;
     public List<Door> doors; 
+    public List<AgentPosition> agent_positions;
     public List<int[]> entry_points;
 }
