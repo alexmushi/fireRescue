@@ -3,9 +3,8 @@ from mesa import Model
 from mesa.space import MultiGrid, PropertyLayer
 from mesa.datacollection import DataCollector
 
-# NumPy y Pandas imports
+# NumPy imports
 import numpy as np
-import pandas as pd
 import random
 
 from util import get_game_variables, decimal_to_binary, binary_to_decimal, get_walls, _serialize_door_position
@@ -14,7 +13,7 @@ from util import get_game_variables, decimal_to_binary, binary_to_decimal, get_w
 from agent import FireRescueAgent
 
 class FireRescueModel(Model):
-    def __init__(self, width = 10, height = 8, agents = 6, seed=None):
+    def __init__(self, width=10, height=8, agents=1, seed=None):
         super().__init__(seed=seed)
         self.width = width
         self.height = height
@@ -41,6 +40,10 @@ class FireRescueModel(Model):
         self.people_rescued = 0
         self.people_lost = 0
 
+        self.steps = 0
+
+        self.fire_targets = {}  # Maps agent IDs to fire positions
+
         self.set_game_data("BeachHouse.txt")
 
         self.changes = {
@@ -52,8 +55,9 @@ class FireRescueModel(Model):
             'explosions': []
         }
 
-        for _ in range(agents):
-            agent = FireRescueAgent(self)
+        for i in range(agents):
+            is_rescuer = i < 5
+            agent = FireRescueAgent(self, is_rescuer=is_rescuer)
             entry_point = random.choice(self.entry_points)
             (x, y) = entry_point
             self.grid.place_agent(agent, (x, y))
@@ -79,7 +83,7 @@ class FireRescueModel(Model):
         self.doors = doors
         self.entry_points = entry_points
     
-    def check_walls(self, pos, complete = False):
+    def check_walls(self, pos, complete=False):
         (x, y) = pos
         wall_value = int(self.walls[x, y])
 
@@ -93,7 +97,7 @@ class FireRescueModel(Model):
         possible_positions = []
         complete_positions = []
 
-        if complete == True:
+        if complete:
             if y - 1 >= 0:
                 complete_positions.append((x, y - 1))
             if x - 1 >= 0:
@@ -113,30 +117,41 @@ class FireRescueModel(Model):
         if right == '0' and x + 1 < self.width:
             possible_positions.append((x + 1, y))
 
-        if complete == True:
+        if complete:
             return possible_positions, complete_positions
         else:
             return possible_positions
     
     def has_wall_between(self, pos1, pos2):
-        (x1, y1) = pos1
-        (x2, y2) = pos2
+        door_state = self.check_door(pos1, pos2)
+        if door_state in ['open', 'destroyed']:
+            # print(f"No wall between {pos1} and {pos2} due to door state: {door_state}")
+            return False  # No wall blocking because door is open or destroyed
+        elif door_state == 'closed':
+            # print(f"Wall between {pos1} and {pos2} because door is closed.")
+            return True  # Wall is present because door is closed
+        else:
+            # No door exists; check walls normally
+            (x1, y1) = pos1
+            (x2, y2) = pos2
 
-        difference_x = x2 - x1
-        difference_y = y2 - y1
+            difference_x = x2 - x1
+            difference_y = y2 - y1
 
-        direction = (difference_x, difference_y)
+            direction = (difference_x, difference_y)
 
-        walls = decimal_to_binary(int(self.walls[pos1]))
+            walls = decimal_to_binary(int(self.walls[pos1]))
 
-        if direction == (0, -1):
-            return walls[0] == '1'
-        elif direction == (-1, 0):
-            return walls[1] == '1'
-        elif direction == (0, 1):
-            return walls[2] == '1'
-        elif direction == (1, 0):
-            return walls[3] == '1'
+            if direction == (0, -1):
+                return walls[0] == '1'
+            elif direction == (-1, 0):
+                return walls[1] == '1'
+            elif direction == (0, 1):
+                return walls[2] == '1'
+            elif direction == (1, 0):
+                return walls[3] == '1'
+            return False
+
 
     def check_door(self, cell1, cell2):
         door_key = frozenset([cell1, cell2])
@@ -165,13 +180,21 @@ class FireRescueModel(Model):
                 self.set_doors_changes_cell(door_key, 'closed')
     
     def select_random_internal_cell(self):
-        MIN_X, MAX_X = 1, 8
-        MIN_Y, MAX_Y = 1, 6
+        MIN_X, MAX_X = 1, self.width - 2
+        MIN_Y, MAX_Y = 1, self.height - 2
 
         x = random.randint(MIN_X, MAX_X)
         y = random.randint(MIN_Y, MAX_Y)
 
         return (x, y)
+    
+    def is_fire_targeted(self, fire_pos):
+        # Check if any agent is targeting the fire at fire_pos
+        for agent in self.agents:
+            if isinstance(agent, FireRescueAgent) and agent.is_targeting_fire(fire_pos):
+                return True
+        return False
+
     
     def assign_new_points_of_interest(self):
 
@@ -180,6 +203,9 @@ class FireRescueModel(Model):
             possible_poi.append('f')
         if self.victims > 0:
             possible_poi.append('v')
+
+        if len(possible_poi) == 0:
+            return
         
         chosen_poi = random.choice(possible_poi)
 
@@ -198,8 +224,14 @@ class FireRescueModel(Model):
         })
     
     def check_missing_points_of_interest(self):
+        countVictims = 0
+        for agent in self.agents:
+            if agent.hasVictim == True:
+                countVictims += 1
+                print (f"Numero de victimas agarradas: {countVictims}")
+        
         non_empty_count = np.count_nonzero(self.points_of_interest.data != '')
-        if non_empty_count < 3:
+        if non_empty_count + countVictims < 3:
             self.assign_new_points_of_interest()
     
     def destroy_wall(self, pos, wall_index_to_destroy):
@@ -229,10 +261,10 @@ class FireRescueModel(Model):
             'new_value': list(self.damage[pos])
         })
 
-        if apply_damage == True:
+        if apply_damage:
             self.damage_points += 1
     
-    def explosion_wall(self, pos, wall_index_to_explode, apply_damage = True):
+    def explosion_wall(self, pos, wall_index_to_explode, apply_damage=True):
         current_wall_damage = self.damage[pos]
 
         if current_wall_damage[wall_index_to_explode] < 2:
@@ -347,6 +379,21 @@ class FireRescueModel(Model):
 
                 self.set_wall_explosions(walls, direction, pos, cell)
 
+    def set_fire_at(self, pos):
+        self.fires.set_cell(pos, 1)
+        self.check_victim_in_fire(pos)
+
+    def check_victim_in_fire(self, pos):
+        poi = self.points_of_interest.data[pos]
+        if poi == 'v':  # Victim
+            self.people_lost += 1
+            print(f"[ALERT] Victim lost at {pos} due to fire.")
+            self.points_of_interest.set_cell(pos, '')  # Remove victim POI
+        elif poi == 'f':  # False Alarm
+            print(f"[INFO] False alarm at {pos} removed by fire.")
+            self.points_of_interest.set_cell(pos, '')  # Remove false alarm POI
+
+
     def assign_fire(self):
         (x, y) = self.select_random_internal_cell()
 
@@ -382,12 +429,73 @@ class FireRescueModel(Model):
                     if fire_position == 1:
                         self.set_fire_changes_cell(pos, 1)
                         break
-    
+
     def check_smoke(self):
         cells_with_smoke = self.fires.select_cells(lambda x: x == 0.5)
 
         for cell in cells_with_smoke:
             self.convert_smoke_to_fire(cell)
+
+    def get_all_fires(self):
+        # Identify all cells with fire (value 1 in the "fires" layer)
+        fire_cells = self.fires.select_cells(lambda x: x == 1)
+        return fire_cells
+    
+    def get_fire_cluster_size(self, fire_pos):
+        visited = set()
+        cluster_size = 0
+        stack = [fire_pos]
+
+        while stack:
+            current = stack.pop()
+            if current in visited:
+                continue
+            visited.add(current)
+
+            # Ensure the cell is part of the fire cluster
+            if self.fires.data[current] == 1:
+                cluster_size += 1
+
+                # Add all orthogonal neighbors (no diagonals)
+                neighbors = self.grid.get_neighborhood(
+                    current,
+                    moore=False,
+                    include_center=False
+                )
+                for neighbor in neighbors:
+                    if neighbor not in visited and not self.has_wall_between(current, neighbor):
+                        stack.append(neighbor)
+
+        return cluster_size
+
+
+    def is_victim_at(self, pos):
+        poi = self.points_of_interest.data[pos]
+        return poi == 'v'
+    
+    def is_poi_at(self, pos):
+        poi = self.points_of_interest.data[pos]
+        return poi in ['v', 'f']
+
+
+    def reveal_poi_at(self, pos):
+        poi_type = self.points_of_interest.data[pos]
+        if poi_type in ['v', 'f']:
+            self.points_of_interest.set_cell(pos, '')  # Remove the POI
+            if poi_type == 'f':
+                self.false_alarms -= 1
+            elif poi_type == 'v':
+                # The victim is now revealed and can be picked up
+                pass
+            return poi_type
+        return None
+
+    def remove_victim(self, pos):
+        if self.is_victim_at(pos):
+            self.points_of_interest.set_cell(pos, '')
+
+    def is_exit(self, pos):
+        return pos in self.entry_points
 
     def print_map(self, walls_array, fires_array):
         height, width = walls_array.shape
@@ -437,12 +545,20 @@ class FireRescueModel(Model):
                 else:
                     middle_line += ' '
                 fire_value = fires_array[y, x]
+                poi = self.points_of_interest.data[(x, y)]
+                agent_here = any(isinstance(agent, FireRescueAgent) for agent in self.grid.get_cell_list_contents((x, y)))
                 if fire_value == 1:
                     cell_content = ' F '
                 elif fire_value == 0.5:
                     cell_content = ' S '
+                elif poi == 'v':
+                    cell_content = ' V '
+                elif poi == 'f':
+                    cell_content = ' B '
+                elif agent_here:
+                    cell_content = ' A '
                 else:
-                    cell_content = '   '  
+                    cell_content = '   '
                 middle_line += cell_content
             # Handle the right wall of the last cell in the row
             last_cell_walls = get_walls(walls_array[y, width - 1])
@@ -479,12 +595,15 @@ class FireRescueModel(Model):
     
     def check_game_over(self):
         if self.damage_points >= 24:
+            print("Game Over: Too much structural damage!")
             return True
         
         if self.people_lost >= 4:
+            print("Game Over: Too many victims lost!")
             return True
         
         if self.people_rescued >= 7:
+            print("Victory: Enough victims have been rescued!")
             return True
         return False
     
@@ -531,21 +650,82 @@ class FireRescueModel(Model):
         return agents
 
     def step(self):
-        if self.check_game_over() == True:
+        print(f"[DEBUG] Executing model step {self.steps}")
+        print(f"--- Step {self.steps } ---")
+        print(f"People Rescued: {self.people_rescued}, People Lost: {self.people_lost}, Damage: {self.damage_points}")
+
+        if self.check_game_over():
             self.simulationFinished = True
             return
-        
+
         self.changes = { 'walls': [], 'fires': [], 'damage': [], 'points_of_interest': [], 'doors': [], 'explosions': [] }
         
         self.datacollector.collect(self)
 
-        # self.agents.shuffle_do("step")
+        agents = list(self.agents)
 
-        self.assign_fire()
+        for agent in agents:
+            print(f"\n[Agent {agent.unique_id}] Step Begins")
+            agent.step()
+            print(f"[Agent {agent.unique_id}] Step Ends with remaining AP: {agent.storedAP}")
+            print(f"{model.false_alarms} False Alarms Remaining")
+            print(f"{model.victims} Victims Remaining at ")
+            print(f"Locations of Interest: \n{model.points_of_interest.data}")
+
+            self.assign_fire()
+            self.check_smoke()
+            self.check_missing_points_of_interest()
+
+            
         
-        self.check_smoke()
+        
+        
 
-        self.check_missing_points_of_interest()
+        self.print_map(self.walls.T, self.fires.data.T)
 
-# while model.check_game_over() == False:
-#     model.step()
+
+ # Para checar victorias en varias simulaciones
+if __name__ == "__main__":
+    NUM_SIMULATIONS = 1000
+    victories = 0
+    losses = 0
+
+    for i in range(NUM_SIMULATIONS):
+        print(f"\n=== Starting Simulation {i + 1} ===")
+        model = FireRescueModel()
+
+        while not model.check_game_over():
+            model.step()
+
+        # Check the result of the simulation
+        if model.people_rescued >= 7:
+            victories += 1
+            print(f"Simulation {i + 1}: Victory")
+        else:
+            losses += 1
+            print(f"Simulation {i + 1}: Loss")
+            print(f"People Rescued: {model.people_rescued}")
+
+    # Final Results
+    print("\n=== Simulation Results ===")
+    print(f"Total Simulations: {NUM_SIMULATIONS}")
+    print(f"Victories: {victories}")
+    print(f"Losses: {losses}")
+ 
+
+""" 
+# Debug mode
+if __name__ == "__main__":
+    model = FireRescueModel()
+    print("Initial State:")
+    model.print_map(model.walls.T, model.fires.data.T)
+
+    while not model.check_game_over():
+        input("Press Enter for the next step...")
+        model.step()
+
+    print("\nSimulation Ended")
+    print(f"Steps: {model.steps}")
+    print(f"People Rescued: {model.people_rescued}")
+    print(f"People Lost: {model.people_lost}")
+    print(f"Damage Points: {model.damage_points}")  """
