@@ -13,7 +13,7 @@ from util import get_game_variables, decimal_to_binary, binary_to_decimal, get_w
 from agent import FireRescueAgent
 
 class FireRescueModel(Model):
-    def __init__(self, width=10, height=8, agents=1, seed=None):
+    def __init__(self, width=10, height=8, agents=6, seed=None):
         super().__init__(seed=seed)
         self.width = width
         self.height = height
@@ -44,7 +44,7 @@ class FireRescueModel(Model):
 
         self.fire_targets = {}  # Maps agent IDs to fire positions
 
-        self.set_game_data("BeachHouse.txt")
+        self.set_game_data("House1.txt")
 
         self.changes = {
             'walls': [],
@@ -56,7 +56,7 @@ class FireRescueModel(Model):
         }
 
         for i in range(agents):
-            is_rescuer = i < 5
+            is_rescuer = i < 3
             agent = FireRescueAgent(self, is_rescuer=is_rescuer)
             entry_point = random.choice(self.entry_points)
             (x, y) = entry_point
@@ -678,9 +678,9 @@ class FireRescueModel(Model):
         self.print_map(self.walls.T, self.fires.data.T)
 
 
- # Para checar victorias en varias simulaciones
+# Para checar victorias en varias simulaciones
 if __name__ == "__main__":
-    NUM_SIMULATIONS = 100
+    NUM_SIMULATIONS = 1000
     victories = 0
     losses = 0
 
@@ -705,7 +705,6 @@ if __name__ == "__main__":
     print(f"Total Simulations: {NUM_SIMULATIONS}")
     print(f"Victories: {victories}")
     print(f"Losses: {losses}")
- 
 
 """ 
 # Debug mode
@@ -722,4 +721,4 @@ if __name__ == "__main__":
     print(f"Steps: {model.steps}")
     print(f"People Rescued: {model.people_rescued}")
     print(f"People Lost: {model.people_lost}")
-    print(f"Damage Points: {model.damage_points}")  """
+    print(f"Damage Points: {model.damage_points}")   """

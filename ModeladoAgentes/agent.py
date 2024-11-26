@@ -36,10 +36,8 @@ class FireRescueAgent(Agent):
         else:
             print(f"[Agent {self.unique_id}] No current fire target.")
 
-        # Define the AP threshold for strategic actions
-        AP_THRESHOLD = 4
-
-        while self.storedAP > 0:
+        # Main loop: Perform actions until AP falls to the threshold (4 or less)
+        while self.storedAP > 4:
             action_performed = False
 
             # 1. Extinguish smoke at current position if present
@@ -55,7 +53,6 @@ class FireRescueAgent(Agent):
                 include_center=False
             )
 
-            # Attempt to extinguish adjacent fires or smokes
             for neighbor_pos in neighbors:
                 if self.has_wall_between(self.pos, neighbor_pos):
                     continue
@@ -64,28 +61,29 @@ class FireRescueAgent(Agent):
                 if fire_value == 1 and self.storedAP >= self.COST_EXTINGUISH_FIRE:
                     self.extinguish_fire(neighbor_pos)
                     action_performed = True
-                    break  # Extinguished a fire; check again
+                    break
                 elif fire_value == 0.5 and self.storedAP >= self.COST_EXTINGUISH_SMOKE:
                     self.extinguish_smoke(neighbor_pos)
                     action_performed = True
-                    break  # Extinguished smoke; check again
+                    break
 
             if action_performed:
-                continue  # Go back to while loop to use storedAP
+                continue
 
-            # 3. Strategic Actions Based on AP Threshold
-            if self.storedAP > AP_THRESHOLD:
-                if self.is_rescuer:
-                    action_performed = self.perform_rescuer_actions()
-                else:
-                    action_performed = self.perform_non_rescuer_actions()
+            # 3. Handle rescuing logic
+            if self.is_rescuer:
+                action_performed = self.perform_rescuer_actions()
 
-                if action_performed:
-                    continue  # Action performed; continue the loop
+            # 4. Handle non-rescuer logic
+            else:
+                action_performed = self.perform_non_rescuer_actions()
 
-            # 4. If no actions performed and AP <= threshold, save AP
-            print(f"[Agent {self.unique_id}] No immediate actions available and AP <= {AP_THRESHOLD}. Saving AP.")
-            break  # Exit the loop to save AP
+            if not action_performed:
+                print(f"[Agent {self.unique_id}] No immediate actions available. Stopping turn with {self.storedAP} AP.")
+                break
+
+        print(f"[Agent {self.unique_id}] Ended turn with {self.storedAP} AP.")
+
 
     def perform_rescuer_actions(self):
         """Handles actions specific to rescuer agents when AP > threshold."""
