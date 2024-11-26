@@ -45,7 +45,7 @@ class FireRescueModel(Model):
 
         self.fire_targets = {}  # Maps agent IDs to fire positions
 
-        self.set_game_data("BeachHouse.txt")
+        self.set_game_data("House1.txt")
 
         self.changes = {
             'walls': [],
@@ -57,7 +57,7 @@ class FireRescueModel(Model):
         }
 
         for i in range(agents):
-            is_rescuer = i < 5
+            is_rescuer = i < 3
             agent = FireRescueAgent(self, is_rescuer=is_rescuer)
             entry_point = random.choice(self.entry_points)
             (x, y) = entry_point
@@ -677,24 +677,34 @@ class FireRescueModel(Model):
             self.simulationFinished = True
             return
 
+        self.changes = { 'walls': [], 'fires': [], 'damage': [], 'points_of_interest': [], 'doors': [], 'explosions': [] }
+        
+        self.datacollector.collect(self)
+
         agents = list(self.agents)
 
         for agent in agents:
             self.changes = { 'walls': [], 'fires': [], 'damage': [], 'points_of_interest': [], 'doors': [], 'explosions': [] }
 
             agent.step()
+            print(f"[Agent {agent.unique_id}] Step Ends with remaining AP: {agent.storedAP}")
+            print(f"{model.false_alarms} False Alarms Remaining")
+            print(f"{model.victims} Victims Remaining at ")
+            print(f"Locations of Interest: \n{model.points_of_interest.data}")
 
             self.assign_fire()
             self.check_smoke()
             self.check_missing_points_of_interest()
-            self.datacollector.collect(self)
+
+        self.print_map(self.walls.T, self.fires.data.T)
+        self.datacollector.collect(self)
 
 
 # Para checar victorias en varias simulaciones
-# if __name__ == "__main__":
-#     NUM_SIMULATIONS = 1000
-#     victories = 0
-#     losses = 0
+if __name__ == "__main__":
+    NUM_SIMULATIONS = 1000
+    victories = 0
+    losses = 0
 
 #     for i in range(NUM_SIMULATIONS):
 #         print(f"\n=== Starting Simulation {i + 1} ===")
@@ -712,12 +722,11 @@ class FireRescueModel(Model):
 #             print(f"Simulation {i + 1}: Loss")
 #             print(f"People Rescued: {model.people_rescued}")
 
-#     # Final Results
-#     print("\n=== Simulation Results ===")
-#     print(f"Total Simulations: {NUM_SIMULATIONS}")
-#     print(f"Victories: {victories}")
-#     print(f"Losses: {losses}")
- 
+    # Final Results
+    print("\n=== Simulation Results ===")
+    print(f"Total Simulations: {NUM_SIMULATIONS}")
+    print(f"Victories: {victories}")
+    print(f"Losses: {losses}")
 
 """ 
 # Debug mode
@@ -734,4 +743,4 @@ if __name__ == "__main__":
     print(f"Steps: {model.steps}")
     print(f"People Rescued: {model.people_rescued}")
     print(f"People Lost: {model.people_lost}")
-    print(f"Damage Points: {model.damage_points}")  """
+    print(f"Damage Points: {model.damage_points}")   """
