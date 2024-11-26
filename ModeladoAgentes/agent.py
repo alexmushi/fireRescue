@@ -171,7 +171,7 @@ class FireRescueAgent(Agent):
     def extinguish_fire(self, pos):
         if self.storedAP >= self.COST_EXTINGUISH_FIRE:
             if not self.has_wall_between(self.pos, pos):
-                self.model.fires.set_cell(pos, 0)  # Remove fire
+                self.model.set_fire_changes_cell(pos, 0) # Remove fire
                 self.storedAP -= self.COST_EXTINGUISH_FIRE
                 print(f"[Agent {self.unique_id}] Extinguished fire at {pos}. Remaining AP: {self.storedAP}")
 
@@ -183,7 +183,7 @@ class FireRescueAgent(Agent):
     def extinguish_smoke(self, pos):
         if self.storedAP >= self.COST_EXTINGUISH_SMOKE:
             if not self.has_wall_between(self.pos, pos):
-                self.model.fires.set_cell(pos, 0)  # Remove smoke
+                self.model.set_fire_changes_cell(pos, 0)  # Remove smoke
                 self.storedAP -= self.COST_EXTINGUISH_SMOKE
                 print(f"[Agent {self.unique_id}] Extinguished smoke at {pos}. Remaining AP: {self.storedAP}")
 

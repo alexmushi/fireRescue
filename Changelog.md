@@ -53,3 +53,4 @@
 - Agregar función de camara para jugador (25/11/2024).
 - Agregar función de shake para la cámara como para la pared (25/11/2024).
 - Agregar que los agentes se instancien en su posición inicial (25/11/2024).
+- Agregar que se apague el fuego que los agentes apaguen (26/11/2024).

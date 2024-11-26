@@ -210,6 +210,56 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &699429626
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 699429628}
+  - component: {fileID: 699429627}
+  m_Layer: 0
+  m_Name: Add Agents Manager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &699429627
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 699429626}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3939af9d2ae594c368dc23ba7efec9ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  agent1Prefab: {fileID: 7154951750830778886, guid: cbedee8ae13ea418faa658f1df78ae08, type: 3}
+  agent2Prefab: {fileID: 6767303036902379232, guid: 56ce09aaea61b43e782af44a5ca1394c, type: 3}
+  agent3Prefab: {fileID: 3280852294678151937, guid: ae97024340cb0401e957b6d50718dd66, type: 3}
+  agent4Prefab: {fileID: 3690653448693961799, guid: 1fc8832aab0e54d1aada1a22312c9291, type: 3}
+  agent5Prefab: {fileID: 4272361803906197775, guid: 670a282b135b24eb49fc619f07cdc8a0, type: 3}
+  agent6Prefab: {fileID: 4237757513567490367, guid: 2300568daa6294a1a8b21ab6899ee470, type: 3}
+--- !u!4 &699429628
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 699429626}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &942549082
 GameObject:
   m_ObjectHideFlags: 0
@@ -271,6 +321,7 @@ GameObject:
   - component: {fileID: 1515615940}
   - component: {fileID: 1515615939}
   - component: {fileID: 1515615941}
+  - component: {fileID: 1515615942}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -367,6 +418,7 @@ MonoBehaviour:
   floorTile: {fileID: 1153733476952630636, guid: 389e6bca67fa54eb2a2ee9a9a4d5db1e, type: 3}
   addWallsManager: {fileID: 942549083}
   addFiresAndPOIManager: {fileID: 127952718}
+  addAgentsManager: {fileID: 699429627}
 --- !u!114 &1515615940
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -424,6 +476,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 5
+--- !u!114 &1515615942
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1515615935}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1edaf2ee91c844e88f5cf9ec5adb75a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  shakeDuration: 0.5
+  shakeMagnitude: 0.2
 --- !u!1 &1702375517
 GameObject:
   m_ObjectHideFlags: 0
@@ -554,3 +620,4 @@ SceneRoots:
   - {fileID: 574936807}
   - {fileID: 942549084}
   - {fileID: 127952719}
+  - {fileID: 699429628}

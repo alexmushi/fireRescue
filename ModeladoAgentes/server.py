@@ -38,7 +38,7 @@ class Server(BaseHTTPRequestHandler):
             }
             model.firstStep = False
         else:
-            model.explosion((3,3))
+            model.step_one_agent()
             data = {
                 "damage_points": model.damage_points,
                 "people_lost": model.people_lost,
@@ -54,6 +54,7 @@ class Server(BaseHTTPRequestHandler):
                 "agent_positions": model.get_all_agent_positions(),
                 "simulation_finished": model.simulationFinished
             }
+            print(model.changes)
             model.print_map(model.walls.T, model.fires.data.T)
 
         json_data = json.dumps(data)

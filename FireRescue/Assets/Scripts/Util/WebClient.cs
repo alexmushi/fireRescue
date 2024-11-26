@@ -81,6 +81,8 @@ public class WebClient : MonoBehaviour
                     GameObject gridContainer = GameObject.Find("GameGrid")?.gameObject;
                     Transform gridTransform = gridContainer.transform;
 
+                    yield return StartCoroutine(addFiresAndPOIManager.extinguishFires(gameData.fires, gridTransform));
+
                     yield return StartCoroutine(addFiresAndPOIManager.Explosion(
                         gameData.explosions, 
                         gameData.fires, 

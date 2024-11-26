@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 public class FireAnimation : MonoBehaviour
 {
@@ -8,6 +9,8 @@ public class FireAnimation : MonoBehaviour
 
     private Vector3 initialScale;
     private Vector3 initialPosition;
+
+    public float duracionScale = 2f;
 
     void Start()
     {
@@ -25,5 +28,27 @@ public class FireAnimation : MonoBehaviour
         float flickerX = Mathf.PerlinNoise(Time.time * flickerSpeed, 0f) * intensity - (intensity / 2);
         float flickerZ = Mathf.PerlinNoise(0f, Time.time * flickerSpeed) * intensity - (intensity / 2);
         transform.position = initialPosition + new Vector3(flickerX, 0, flickerZ);
+    }
+
+    public IEnumerator PutOutFire()
+    {
+        yield return StartCoroutine(ScaleDownAndDestroy());
+    }
+
+    private IEnumerator ScaleDownAndDestroy()
+    {
+        Vector3 escalaInicial = transform.localScale;
+        Vector3 escalaFinal = Vector3.zero;
+        float tiempo = 0f;
+
+        while (tiempo < duracionScale)
+        {
+            transform.localScale = Vector3.Lerp(escalaInicial, escalaFinal, tiempo / duracionScale);
+            tiempo += Time.deltaTime;
+            yield return null;
+        }
+
+        transform.localScale = escalaFinal;
+        Destroy(gameObject); // Destruye el objeto después de la reducción de escala
     }
 }

@@ -349,4 +349,29 @@ public class AddFiresAndPOI : MonoBehaviour
             smoke.name = "Smoke at " + cellName;
         }
     }
+
+    public IEnumerator extinguishFires(List<NewStatusDouble> fires, Transform gridParent) {
+        for (int i = fires.Count - 1; i >= 0; i--)
+        {
+            NewStatusDouble fire = fires[i];
+            int fireCol = fire.position[0];
+            int fireRow = fire.position[1];
+
+            if (fire.new_value == 0)
+            {
+                string cellName = $"Cell({fireCol},{fireRow})";
+                string fireName = "Fire at " + cellName;
+
+                GameObject cell = gridParent.Find(cellName)?.gameObject;
+                GameObject fireObject = cell.transform.Find(fireName)?.gameObject;
+
+                if (fireObject == null) continue;
+
+                FireAnimation fireAnim = fireObject.GetComponent<FireAnimation>();
+                yield return StartCoroutine(fireAnim.PutOutFire());
+                yield return new WaitForSeconds(0.5f);
+            }
+        }
+        yield return null;
+    }
 }

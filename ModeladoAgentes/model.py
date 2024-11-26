@@ -13,12 +13,13 @@ from util import get_game_variables, decimal_to_binary, binary_to_decimal, get_w
 from agent import FireRescueAgent
 
 class FireRescueModel(Model):
-    def __init__(self, width=10, height=8, agents=1, seed=None):
+    def __init__(self, width=10, height=8, agents=6, seed=None):
         super().__init__(seed=seed)
         self.width = width
         self.height = height
         self.firstStep = True
         self.simulationFinished = False
+        self.currentAgentIndex = 0
 
         self.datacollector = DataCollector(
             agent_reporters={"Position": lambda a: a.pos}
@@ -647,64 +648,75 @@ class FireRescueModel(Model):
             })
 
         return agents
-
-    def step(self):
-        print(f"[DEBUG] Executing model step {self.steps}")
-        print(f"--- Step {self.steps } ---")
-        print(f"People Rescued: {self.people_rescued}, People Lost: {self.people_lost}, Damage: {self.damage_points}")
-
+    
+    def step_one_agent(self):
         if self.check_game_over():
             self.simulationFinished = True
             return
 
-        self.changes = { 'walls': [], 'fires': [], 'damage': [], 'points_of_interest': [], 'doors': [], 'explosions': [] }
-        
-        self.datacollector.collect(self)
+        if self.currentAgentIndex < len(self.agents):
+            agent = self.agents[self.currentAgentIndex]
 
-        agents = list(self.agents)
+            self.changes = { 'walls': [], 'fires': [], 'damage': [], 'points_of_interest': [], 'doors': [], 'explosions': [] }
 
-        for agent in agents:
-            print(f"\n[Agent {agent.unique_id}] Step Begins")
             agent.step()
-            print(f"[Agent {agent.unique_id}] Step Ends with remaining AP: {agent.storedAP}")
-            print(f"{model.false_alarms} False Alarms Remaining")
-            print(f"{model.victims} Victims Remaining at ")
-            print(f"Locations of Interest: \n{model.points_of_interest.data}")
 
             self.assign_fire()
             self.check_smoke()
             self.check_missing_points_of_interest()
+            self.datacollector.collect(self)
 
-        self.print_map(self.walls.T, self.fires.data.T)
+            # Move to the next agent for the next call
+            self.currentAgentIndex += 1
+
+            if self.currentAgentIndex >= len(self.agents):
+                self.currentAgentIndex = 0  # Reset to the first agent
+
+    def step(self):
+        if self.check_game_over():
+            self.simulationFinished = True
+            return
+
+        agents = list(self.agents)
+
+        for agent in agents:
+            self.changes = { 'walls': [], 'fires': [], 'damage': [], 'points_of_interest': [], 'doors': [], 'explosions': [] }
+
+            agent.step()
+
+            self.assign_fire()
+            self.check_smoke()
+            self.check_missing_points_of_interest()
+            self.datacollector.collect(self)
 
 
- # Para checar victorias en varias simulaciones
-if __name__ == "__main__":
-    NUM_SIMULATIONS = 1000
-    victories = 0
-    losses = 0
+# Para checar victorias en varias simulaciones
+# if __name__ == "__main__":
+#     NUM_SIMULATIONS = 1000
+#     victories = 0
+#     losses = 0
 
-    for i in range(NUM_SIMULATIONS):
-        print(f"\n=== Starting Simulation {i + 1} ===")
-        model = FireRescueModel()
+#     for i in range(NUM_SIMULATIONS):
+#         print(f"\n=== Starting Simulation {i + 1} ===")
+#         model = FireRescueModel()
 
-        while not model.check_game_over():
-            model.step()
+#         while not model.check_game_over():
+#             model.step()
 
-        # Check the result of the simulation
-        if model.people_rescued >= 7:
-            victories += 1
-            print(f"Simulation {i + 1}: Victory")
-        else:
-            losses += 1
-            print(f"Simulation {i + 1}: Loss")
-            print(f"People Rescued: {model.people_rescued}")
+#         # Check the result of the simulation
+#         if model.people_rescued >= 7:
+#             victories += 1
+#             print(f"Simulation {i + 1}: Victory")
+#         else:
+#             losses += 1
+#             print(f"Simulation {i + 1}: Loss")
+#             print(f"People Rescued: {model.people_rescued}")
 
-    # Final Results
-    print("\n=== Simulation Results ===")
-    print(f"Total Simulations: {NUM_SIMULATIONS}")
-    print(f"Victories: {victories}")
-    print(f"Losses: {losses}")
+#     # Final Results
+#     print("\n=== Simulation Results ===")
+#     print(f"Total Simulations: {NUM_SIMULATIONS}")
+#     print(f"Victories: {victories}")
+#     print(f"Losses: {losses}")
  
 
 """ 
