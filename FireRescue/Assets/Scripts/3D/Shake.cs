@@ -30,7 +30,10 @@ public class Shakes : MonoBehaviour
 
     public void TriggerShake()
     {
-        // Start the shake coroutine
+        // Actualizar la posición original con la posición actual
+        originalPosition = transform.localPosition;
+
+        // Iniciar la corrutina del efecto de shake
         StartCoroutine(Shake());
     }
 
@@ -63,22 +66,27 @@ public class Shakes : MonoBehaviour
     }
 
     private IEnumerator WallShake(Transform target, float duration, float magnitude)
+{
+    // Usar la posición actual como referencia
+    Vector3 originalPosition = target.localPosition;
+    float elapsed = 0.0f;
+
+    while (elapsed < duration)
     {
-        Vector3 originalPosition = target.localPosition;
-        float elapsed = 0.0f;
+        // Generar un desplazamiento aleatorio dentro de los límites del shake
+        float offsetX = Random.Range(-1f, 1f) * magnitude;
+        float offsetY = Random.Range(-1f, 1f) * magnitude;
+        float offsetZ = Random.Range(-1f, 1f) * magnitude;
 
-        while (elapsed < duration)
-        {
-            float offsetX = UnityEngine.Random.Range(-1f, 1f) * magnitude;
-            float offsetY = UnityEngine.Random.Range(-1f, 1f) * magnitude;
-            float offsetZ = UnityEngine.Random.Range(-1f, 1f) * magnitude;
+        // Aplicar el desplazamiento
+        target.localPosition = originalPosition + new Vector3(offsetX, offsetY, offsetZ);
 
-            target.localPosition = originalPosition + new Vector3(offsetX, offsetY, offsetZ);
-
-            elapsed += Time.deltaTime;
-            yield return null;
-        }
-
-        target.localPosition = originalPosition;
+        elapsed += Time.deltaTime;
+        yield return null;
     }
+
+    // Asegurar que vuelva exactamente a su posición inicial
+    target.localPosition = originalPosition;
+}
+
 }
