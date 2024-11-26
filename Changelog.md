@@ -55,3 +55,4 @@
 - Agregar que los agentes se instancien en su posición inicial (25/11/2024).
 - Agregar que se apague el fuego que los agentes apaguen (26/11/2024).
 - Agregar mejora donde los agentes no desperdician energía y se encuentra el fuego y humo más cercano correctamente (26/11/2024).
+- Agregar que los rescuers también usen la función de A* y borrar funciones inecesarias (26/11/2024).

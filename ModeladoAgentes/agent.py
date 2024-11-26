@@ -97,10 +97,10 @@ class FireRescueAgent(Agent):
                 # Move towards nearest exit
                 target_pos = self.find_nearest_exit()
                 if target_pos:
-                    path = self.find_path_to(target_pos, with_victim=True)
+                    path, _ = self.a_star(self.pos, target_pos)
                     if len(path) > 1:
                         next_step = path[1]
-                        move_cost = self.calculate_move_cost(self.pos, next_step, with_victim=True)
+                        move_cost = self.get_movement_cost(self.pos, next_step)
                         if self.storedAP >= move_cost:
                             self.move_to(next_step, with_victim=True)
                             return True
@@ -116,13 +116,15 @@ class FireRescueAgent(Agent):
                 # Move towards nearest victim or POI
                 target_pos = self.find_nearest_victim_or_poi()
                 if target_pos:
-                    path = self.find_path_to(target_pos)
+                    path, _ = self.a_star(self.pos, target_pos)
                     if len(path) > 1:
                         next_step = path[1]
-                        move_cost = self.calculate_move_cost(self.pos, next_step)
+                        move_cost = self.get_movement_cost(self.pos, next_step)
                         if self.storedAP >= move_cost:
                             self.move_to(next_step)
                             return True
+                else:
+                    print(f"[Agent {self.unique_id}] No victims or POIs left to rescue.")
         return False  # No actions performed
 
     def perform_non_rescuer_actions(self):
@@ -135,13 +137,13 @@ class FireRescueAgent(Agent):
             self.assign_smoke_target()
 
         if self.target_fire and self.storedAP >= self.COST_MOVE:
-            path = self.find_path_to(self.target_fire)
+            path, total_cost = self.a_star(self.pos, self.target_fire)
             if len(path) > 1:
                 next_step = path[1]
-                move_cost = self.calculate_move_cost(self.pos, next_step)
+                move_cost = self.get_movement_cost(self.pos, next_step)
                 # Estimate total cost to reach and extinguish fire
-                total_cost = move_cost + (len(path) - 2) * self.COST_MOVE + self.COST_EXTINGUISH_FIRE
-                if self.storedAP >= total_cost:
+                total_action_cost = total_cost + self.COST_EXTINGUISH_FIRE
+                if self.storedAP >= total_action_cost:
                     self.move_to(next_step)
                     return True
                 else:
@@ -155,13 +157,13 @@ class FireRescueAgent(Agent):
                         print(f"[Agent {self.unique_id}] Not enough AP to reach fire. Waiting to accumulate AP.")
                         return False  # Wait to accumulate more AP
         elif self.target_smoke and self.storedAP >= self.COST_MOVE:
-            path = self.find_path_to(self.target_fire)
+            path, total_cost = self.a_star(self.pos, self.target_smoke)
             if len(path) > 1:
                 next_step = path[1]
-                move_cost = self.calculate_move_cost(self.pos, next_step)
+                move_cost = self.get_movement_cost(self.pos, next_step)
                 # Estimate total cost to reach and extinguish smoke
-                total_cost = move_cost + (len(path) - 2) * self.COST_MOVE + self.COST_EXTINGUISH_SMOKE
-                if self.storedAP >= total_cost:
+                total_action_cost = total_cost + self.COST_EXTINGUISH_SMOKE
+                if self.storedAP >= total_action_cost:
                     self.move_to(next_step)
                     return True
                 else:
@@ -172,17 +174,15 @@ class FireRescueAgent(Agent):
                         self.move_to(next_step)
                         return True
                     else:
-                        print(f"[Agent {self.unique_id}] Not enough AP to reach fire. Waiting to accumulate AP.")
+                        print(f"[Agent {self.unique_id}] Not enough AP to reach smoke. Waiting to accumulate AP.")
                         return False  # Wait to accumulate more AP
         return False  # No actions performed
-
 
     def pick_up_victim(self):
         if self.model.is_victim_at(self.pos) and not self.hasVictim:
             self.hasVictim = True
             self.model.remove_victim(self.pos)
             print(f"[Agent {self.unique_id}] Picked up a victim at {self.pos}.")
-            
 
     def drop_victim(self):
         if self.hasVictim and self.model.is_exit(self.pos):
@@ -329,7 +329,6 @@ class FireRescueAgent(Agent):
     def is_targeting_smoke(self, smoke_pos):
         # Check if this agent is targeting the given smoke
         return hasattr(self, "target_smoke") and self.target_smoke == smoke_pos
-
             
     def find_nearest_exit(self):
         # Find the nearest exit cell
@@ -342,29 +341,6 @@ class FireRescueAgent(Agent):
             visited.add(current_pos)
 
             if self.model.is_exit(current_pos):
-                return current_pos
-
-            neighbors = self.model.grid.get_neighborhood(
-                current_pos,
-                moore=False,
-                include_center=False
-            )
-            for neighbor in neighbors:
-                if neighbor not in visited and self.can_move_between(current_pos, neighbor):
-                    heapq.heappush(queue, (cost + 1, neighbor))
-        return None
-    
-    def find_nearest_victim(self):
-        # Find the nearest cell with a victim
-        queue = [(0, self.pos)]
-        visited = set()
-        while queue:
-            cost, current_pos = heapq.heappop(queue)
-            if current_pos in visited:
-                continue
-            visited.add(current_pos)
-
-            if self.model.is_victim_at(current_pos):
                 return current_pos
 
             neighbors = self.model.grid.get_neighborhood(
@@ -467,60 +443,6 @@ class FireRescueAgent(Agent):
                 continue
             if not self.has_wall_between_without_closed_door(from_pos, neighbor):
                 return False  # Found an alternative path
-
-    def find_path_to(self, target_pos, with_victim=False):
-        open_set = []
-        heapq.heappush(open_set, (0, self.pos))
-        came_from = {}
-        g_score = {self.pos: 0}
-
-        while open_set:
-            _, current = heapq.heappop(open_set)
-            if current == target_pos:
-                return self.reconstruct_path(came_from, current)
-
-            neighbors = self.model.grid.get_neighborhood(
-                current,
-                moore=False,
-                include_center=False
-            )
-
-            for neighbor in neighbors:
-                door_state = self.model.check_door(current, neighbor)
-
-                if door_state == 'closed':
-                    # Cost to open the door plus move
-                    move_cost = self.COST_OPEN_DOOR + self.COST_MOVE
-                    print(f"[Agent {self.unique_id}] Considering opening closed door between {current} and {neighbor}. Added cost: {self.COST_OPEN_DOOR}.")
-                elif door_state in ['open', 'destroyed']:
-                    # Only move cost
-                    move_cost = self.COST_MOVE
-                    print(f"[Agent {self.unique_id}] Moving through {door_state} door between {current} and {neighbor}. Move cost: {self.COST_MOVE}.")
-                else:
-                    # No door; check for walls
-                    if self.has_wall_between_without_closed_door(current, neighbor):
-                        # print(f"[Agent {self.unique_id}] Cannot move to {neighbor} from {current} due to wall.")
-                        continue  # Skip if there's a wall without a door
-                    move_cost = self.COST_MOVE  # Regular move cost
-
-                tentative_g_score = g_score[current] + move_cost
-
-                if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
-                    came_from[neighbor] = current
-                    g_score[neighbor] = tentative_g_score
-                    f_score = tentative_g_score + self.heuristic(neighbor, target_pos)
-                    heapq.heappush(open_set, (f_score, neighbor))
-
-        print(f"[Agent {self.unique_id}] No valid path found to {target_pos}.")
-        return []  # Return an empty path if no valid path found
-
-
-    def reconstruct_path(self, came_from, current):
-        total_path = [current]
-        while current in came_from:
-            current = came_from[current]
-            total_path.insert(0, current)
-        return total_path
     
     def count_walls_between(self, a, b):
         # Simple implementation; improve as needed
@@ -546,10 +468,8 @@ class FireRescueAgent(Agent):
         # Use A* to find the closest fire
         closest_fire = min(
             untargeted_fires,
-            key=lambda fire: self.a_star(self.pos, fire)
+            key=lambda fire: self.a_star(self.pos, fire)[1]
         )
-
-        print(f"[Agent {self.unique_id}] Found closest fire at {closest_fire}.")
 
         return closest_fire
     
@@ -565,7 +485,7 @@ class FireRescueAgent(Agent):
         # Use A* to find the closest smoke
         closest_smoke = min(
             untargeted_smokes,
-            key=lambda smoke: self.a_star(self.pos, smoke)
+            key=lambda smoke: self.a_star(self.pos, smoke)[1]
         )
 
         return closest_smoke
@@ -603,7 +523,9 @@ class FireRescueAgent(Agent):
             current = heapq.heappop(open_set)[1]
             
             if current == goal:
-                return g_score[current]
+                # Reconstruct the path and return both path and cost
+                path = self.reconstruct_path(came_from, current)
+                return path, g_score[current]
             
             for neighbor in self.get_neighbors(current):
                 movement_cost = self.get_movement_cost(current, neighbor)
@@ -614,7 +536,14 @@ class FireRescueAgent(Agent):
                     f_score = tentative_g_score + self.a_star_heuristic(neighbor, goal)
                     heapq.heappush(open_set, (f_score, neighbor))
         
-        return float('inf')  # No path found
+        return [], float('inf')  # No path found
+    
+    def reconstruct_path(self, came_from, current):
+        total_path = [current]
+        while current in came_from:
+            current = came_from[current]
+            total_path.insert(0, current)
+        return total_path
     
     def get_movement_cost(self, current, neighbor):
         door_state = self.model.check_door(current, neighbor)

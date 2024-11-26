@@ -58,7 +58,7 @@ class FireRescueModel(Model):
         }
 
         for i in range(agents):
-            is_rescuer = i < -1
+            is_rescuer = i < 1
             agent = FireRescueAgent(self, is_rescuer=is_rescuer)
             entry_point = random.choice(self.entry_points)
             (x, y) = entry_point
@@ -397,10 +397,6 @@ class FireRescueModel(Model):
 
                 self.set_wall_explosions(walls, direction, pos, cell)
 
-    def set_fire_at(self, pos):
-        self.fires.set_cell(pos, 1)
-        self.check_victim_in_fire(pos)
-
     def check_victim_in_fire(self, pos):
         poi = self.points_of_interest.data[pos]
         if poi == 'v':  # Victim
@@ -463,33 +459,6 @@ class FireRescueModel(Model):
         # Identify all cells with smoke (value 0.5 in the "fires" layer)
         smoke_cells = self.fires.select_cells(lambda x: x == 0.5)
         return smoke_cells
-    
-    def get_fire_cluster_size(self, fire_pos):
-        visited = set()
-        cluster_size = 0
-        stack = [fire_pos]
-
-        while stack:
-            current = stack.pop()
-            if current in visited:
-                continue
-            visited.add(current)
-
-            # Ensure the cell is part of the fire cluster
-            if self.fires.data[current] == 1:
-                cluster_size += 1
-
-                # Add all orthogonal neighbors (no diagonals)
-                neighbors = self.grid.get_neighborhood(
-                    current,
-                    moore=False,
-                    include_center=False
-                )
-                for neighbor in neighbors:
-                    if neighbor not in visited and not self.has_wall_between(current, neighbor):
-                        stack.append(neighbor)
-
-        return cluster_size
 
     def is_victim_at(self, pos):
         poi = self.points_of_interest.data[pos]
@@ -724,7 +693,7 @@ class FireRescueModel(Model):
 
 # Para checar victorias en varias simulaciones
 # if __name__ == "__main__":
-#     NUM_SIMULATIONS = 100
+#     NUM_SIMULATIONS = 1000
 #     victories = 0
 #     losses = 0
 
