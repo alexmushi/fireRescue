@@ -369,6 +369,7 @@ public class AddFiresAndPOI : MonoBehaviour
 
                 FireAnimation fireAnim = fireObject.GetComponent<FireAnimation>();
                 yield return StartCoroutine(fireAnim.PutOutFire());
+                fires.RemoveAt(i);
                 yield return new WaitForSeconds(0.5f);
             }
         }
