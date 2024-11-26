@@ -677,7 +677,7 @@ class FireRescueModel(Model):
 
         self.print_map(self.walls.T, self.fires.data.T)
 
-
+""" 
 # Para checar victorias en varias simulaciones
 if __name__ == "__main__":
     NUM_SIMULATIONS = 1000
@@ -704,9 +704,8 @@ if __name__ == "__main__":
     print("\n=== Simulation Results ===")
     print(f"Total Simulations: {NUM_SIMULATIONS}")
     print(f"Victories: {victories}")
-    print(f"Losses: {losses}")
+    print(f"Losses: {losses}") """
 
-""" 
 # Debug mode
 if __name__ == "__main__":
     model = FireRescueModel()
@@ -721,4 +720,5 @@ if __name__ == "__main__":
     print(f"Steps: {model.steps}")
     print(f"People Rescued: {model.people_rescued}")
     print(f"People Lost: {model.people_lost}")
-    print(f"Damage Points: {model.damage_points}")   """
+    print(f"Damage Points: {model.damage_points}") 
+

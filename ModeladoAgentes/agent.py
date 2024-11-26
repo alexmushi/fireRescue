@@ -567,5 +567,5 @@ class FireRescueAgent(Agent):
         distance = abs(a[0] - b[0]) + abs(a[1] - b[1])
         # Add wall penalty
         walls_between = self.count_walls_between(a, b)
-        wall_penalty = walls_between * 3  # Adjust weight as needed
+        wall_penalty = walls_between * 0.1
         return distance + wall_penalty
