@@ -468,7 +468,6 @@ class FireRescueModel(Model):
 
         return cluster_size
 
-
     def is_victim_at(self, pos):
         poi = self.points_of_interest.data[pos]
         return poi == 'v'
@@ -476,7 +475,6 @@ class FireRescueModel(Model):
     def is_poi_at(self, pos):
         poi = self.points_of_interest.data[pos]
         return poi in ['v', 'f']
-
 
     def reveal_poi_at(self, pos):
         poi_type = self.points_of_interest.data[pos]
@@ -611,6 +609,7 @@ class FireRescueModel(Model):
         # Check to see if a cell with smoke is being set to fire
         if value == 1.0:
             self.remove_smoke_change(pos)
+            self.check_victim_in_fire(pos)
         self.fires.set_cell(pos, value)
         self.changes['fires'].append({
             'position': [int(pos[0]), int(pos[1])],
@@ -675,11 +674,6 @@ class FireRescueModel(Model):
             self.assign_fire()
             self.check_smoke()
             self.check_missing_points_of_interest()
-
-            
-        
-        
-        
 
         self.print_map(self.walls.T, self.fires.data.T)
 
