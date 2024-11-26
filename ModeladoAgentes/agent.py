@@ -9,6 +9,7 @@ class FireRescueAgent(Agent):
         super().__init__(model)
         self.is_rescuer = is_rescuer
         self.target_fire = None
+        self.target_smoke = None
         self.hasVictim = False
         self.AP_PER_TURN = 4     # Action points gained per turn
         self.MAX_AP = 8          # Maximum action points that can be stored
@@ -37,7 +38,7 @@ class FireRescueAgent(Agent):
             print(f"[Agent {self.unique_id}] No current fire target.")
 
         # Main loop: Perform actions until AP falls to the threshold (4 or less)
-        while self.storedAP > 4:
+        while self.storedAP >= 4:
             action_performed = False
 
             # 1. Extinguish smoke at current position if present
@@ -54,7 +55,7 @@ class FireRescueAgent(Agent):
             )
 
             for neighbor_pos in neighbors:
-                if self.has_wall_between(self.pos, neighbor_pos):
+                if self.has_wall_between_with_closed_door(self.pos, neighbor_pos):
                     continue
 
                 fire_value = self.model.fires.data[neighbor_pos]
@@ -126,8 +127,12 @@ class FireRescueAgent(Agent):
 
     def perform_non_rescuer_actions(self):
         """Handles actions specific to non-rescuer agents when AP > threshold."""
+        fireAssigned = False
         if not self.target_fire:
-            self.assign_fire_target()
+            fireAssigned = self.assign_fire_target()
+        
+        if not self.target_fire and not fireAssigned and not self.target_smoke:
+            self.assign_smoke_target()
 
         if self.target_fire and self.storedAP >= self.COST_MOVE:
             path = self.find_path_to(self.target_fire)
@@ -141,14 +146,34 @@ class FireRescueAgent(Agent):
                     return True
                 else:
                     # Decide whether to wait and accumulate AP or move closer
-                    if self.storedAP < self.MAX_AP:
+                    remaining_AP_after_move = self.storedAP - move_cost
+                    if remaining_AP_after_move >= 4:
+                        # Move closer to avoid wasting AP
+                        self.move_to(next_step)
+                        return True
+                    else:
                         print(f"[Agent {self.unique_id}] Not enough AP to reach fire. Waiting to accumulate AP.")
                         return False  # Wait to accumulate more AP
+        elif self.target_smoke and self.storedAP >= self.COST_MOVE:
+            path = self.find_path_to(self.target_fire)
+            if len(path) > 1:
+                next_step = path[1]
+                move_cost = self.calculate_move_cost(self.pos, next_step)
+                # Estimate total cost to reach and extinguish smoke
+                total_cost = move_cost + (len(path) - 2) * self.COST_MOVE + self.COST_EXTINGUISH_SMOKE
+                if self.storedAP >= total_cost:
+                    self.move_to(next_step)
+                    return True
+                else:
+                    # Decide whether to wait and accumulate AP or move closer
+                    remaining_AP_after_move = self.storedAP - move_cost
+                    if remaining_AP_after_move >= 4:
+                        # Move closer to avoid wasting AP
+                        self.move_to(next_step)
+                        return True
                     else:
-                        # Move closer if possible
-                        if self.storedAP >= move_cost:
-                            self.move_to(next_step)
-                            return True
+                        print(f"[Agent {self.unique_id}] Not enough AP to reach fire. Waiting to accumulate AP.")
+                        return False  # Wait to accumulate more AP
         return False  # No actions performed
 
 
@@ -168,7 +193,7 @@ class FireRescueAgent(Agent):
 
     def extinguish_fire(self, pos):
         if self.storedAP >= self.COST_EXTINGUISH_FIRE:
-            if not self.has_wall_between(self.pos, pos):
+            if not self.has_wall_between_with_closed_door(self.pos, pos):
                 self.model.set_fire_changes_cell(pos, 0) # Remove fire
                 self.storedAP -= self.COST_EXTINGUISH_FIRE
                 print(f"[Agent {self.unique_id}] Extinguished fire at {pos}. Remaining AP: {self.storedAP}")
@@ -180,7 +205,7 @@ class FireRescueAgent(Agent):
 
     def extinguish_smoke(self, pos):
         if self.storedAP >= self.COST_EXTINGUISH_SMOKE:
-            if not self.has_wall_between(self.pos, pos):
+            if not self.has_wall_between_with_closed_door(self.pos, pos):
                 self.model.set_fire_changes_cell(pos, 0)  # Remove smoke
                 self.storedAP -= self.COST_EXTINGUISH_SMOKE
                 print(f"[Agent {self.unique_id}] Extinguished smoke at {pos}. Remaining AP: {self.storedAP}")
@@ -205,19 +230,6 @@ class FireRescueAgent(Agent):
             elif fire_value == 0.5 and self.storedAP >= self.COST_EXTINGUISH_SMOKE:
                 self.extinguish_smoke(neighbor_pos)
 
-    
-    def score_fires(self):
-        fires = self.model.get_all_fires()
-        fire_scores = {}
-        for fire_pos in fires:
-            cluster_size = self.model.get_fire_cluster_size(fire_pos)
-            distance_to_agent = self.heuristic(self.pos, fire_pos)
-            proximity_score = max(1, 10 - distance_to_agent)
-            total_score = cluster_size * proximity_score
-            fire_scores[fire_pos] = total_score
-        return fire_scores
-
-
     def move_to(self, pos, with_victim=False):
         move_cost = self.COST_MOVE_WITH_VICTIM if with_victim else self.COST_MOVE
 
@@ -226,49 +238,36 @@ class FireRescueAgent(Agent):
             if self.storedAP >= self.COST_EXTINGUISH_FIRE:
                 print(f"[Agent {self.unique_id}] Fire detected at {pos}. Extinguishing it before moving.")
                 self.extinguish_fire(pos)
-            """ else:
-                print(f"[Agent {self.unique_id}] Cannot move to {pos} due to fire. Not enough AP to extinguish and avoid being stunned.")
-                return  # Do not move to the cell """
 
+        total_cost = move_cost
         door_state = self.model.check_door(self.pos, pos)
-        if door_state == 'closed' and self.storedAP >= self.COST_OPEN_DOOR:
-            print(f"[Agent {self.unique_id}] Opening door at {pos}.")
-            self.model.open_door(self.pos, pos)
-            self.storedAP -= self.COST_OPEN_DOOR
-        
-        if self.storedAP >= move_cost:
-            door_state = self.model.check_door(self.pos, pos)
-            if door_state == 'closed':
-                # Open the door if there is enough AP
-                if self.storedAP >= self.COST_OPEN_DOOR:
-                    print(f"[Agent {self.unique_id}] Opening door between {self.pos} and {pos}.")
-                    self.model.open_door(self.pos, pos)
-                    self.storedAP -= self.COST_OPEN_DOOR
-                    door_state = 'open'
-                else:
-                    print(f"[Agent {self.unique_id}] Not enough AP to open door between {self.pos} and {pos}.")
-                    return
+        if door_state == 'closed':
+            total_cost += self.COST_OPEN_DOOR
 
-            # Proceed with movement
+        if self.storedAP >= total_cost:
+            if door_state == 'closed':
+                print(f"[Agent {self.unique_id}] Opening door between {self.pos} and {pos}.")
+                self.model.open_door(self.pos, pos)
+                self.storedAP -= self.COST_OPEN_DOOR
+
             self.model.grid.move_agent(self, pos)
             self.storedAP -= move_cost
             print(f"[Agent {self.unique_id}] Moved to {pos}. Remaining AP: {self.storedAP}.")
 
             # Check current cell and adjacent cells for fire or smoke
             self.check_and_extinguish(pos)
+        else:
+            print(f"[Agent {self.unique_id}] Not enough AP to move to {pos}. Needed {total_cost}, had {self.storedAP}.")
 
     def calculate_move_cost(self, from_pos, to_pos, with_victim=False):
         move_cost = self.COST_MOVE_WITH_VICTIM if with_victim else self.COST_MOVE
-        cost = 0
-        if self.has_wall_between(from_pos, to_pos):
+        cost = move_cost
+        if self.has_wall_between_without_closed_door(from_pos, to_pos):
             cost += self.COST_DAMAGE_WALL  # Cost to damage wall
-            cost += move_cost
         else:
             door_state = self.model.check_door(from_pos, to_pos)
             if door_state == 'closed':
                 cost += self.COST_OPEN_DOOR
-            else:
-                cost += move_cost
         return cost
 
     def check_actions_after_move(self, pos, remaining_ap):
@@ -280,7 +279,7 @@ class FireRescueAgent(Agent):
         )
 
         for neighbor_pos in neighbors:
-            if self.has_wall_between(pos, neighbor_pos):
+            if self.has_wall_between_with_closed_door(pos, neighbor_pos):
                 continue
 
             fire_value = self.model.fires.data[neighbor_pos]
@@ -311,41 +310,25 @@ class FireRescueAgent(Agent):
             self.model.set_wall_explosions(walls, direction, pos1, pos2)
             # No need to deduct AP here; it's done in move_to
 
-    def has_wall_between(self, pos1, pos2):
-        return self.model.has_wall_between(pos1, pos2)
+    def has_wall_between_without_closed_door(self, pos1, pos2):
+        return self.model.has_wall_between_without_closed_door(pos1, pos2)
+
+    def has_wall_between_with_closed_door(self, pos1, pos2):
+        return self.model.has_wall_between_with_closed_door(pos1, pos2)
 
     def can_move_between(self, pos1, pos2):
-        if self.has_wall_between(pos1, pos2):
+        if self.has_wall_between_with_closed_door(pos1, pos2):
             return False
         # For pathfinding, consider closed doors as passable with extra cost
         return True
 
-    def find_highest_priority_fire(self):
-        fire_scores = self.score_fires()
-        if not fire_scores:
-            return None
-        # Sort fires based on score, descending
-        sorted_fires = sorted(fire_scores.items(), key=lambda x: x[1], reverse=True)
-        # Exclude fires targeted by other agents
-        for fire_pos, score in sorted_fires:
-            if not self.model.is_fire_targeted(fire_pos):
-                return fire_pos
-        return None
-    
-    def assign_fire_target(self):
-        fire_pos = self.find_highest_priority_fire()
-        if fire_pos:
-            self.target_fire = fire_pos
-            print(f"[Agent {self.unique_id}] Assigned new fire target at {fire_pos}.")
-            # Register the target in the model to prevent other agents from targeting it
-            self.model.fire_targets[self.unique_id] = fire_pos
-        else:
-            print(f"[Agent {self.unique_id}] No fires left to target.")
-
-
     def is_targeting_fire(self, fire_pos):
         # Check if this agent is targeting the given fire
         return hasattr(self, "target_fire") and self.target_fire == fire_pos
+    
+    def is_targeting_smoke(self, smoke_pos):
+        # Check if this agent is targeting the given smoke
+        return hasattr(self, "target_smoke") and self.target_smoke == smoke_pos
 
             
     def find_nearest_exit(self):
@@ -456,10 +439,9 @@ class FireRescueAgent(Agent):
                 include_center=False
             )
             for neighbor in neighbors:
-                if neighbor not in visited and not self.has_wall_between(current_pos, neighbor):
+                if neighbor not in visited and not self.has_wall_between_with_closed_door(current_pos, neighbor):
                     heapq.heappush(queue, (cost + 1, neighbor))
         return None
-
     
     def reveal_poi(self):
         poi_type = self.model.reveal_poi_at(self.pos)
@@ -483,7 +465,7 @@ class FireRescueAgent(Agent):
         for neighbor in neighbors:
             if neighbor == to_pos:
                 continue
-            if not self.has_wall_between(from_pos, neighbor):
+            if not self.has_wall_between_without_closed_door(from_pos, neighbor):
                 return False  # Found an alternative path
 
     def find_path_to(self, target_pos, with_victim=False):
@@ -516,7 +498,7 @@ class FireRescueAgent(Agent):
                     print(f"[Agent {self.unique_id}] Moving through {door_state} door between {current} and {neighbor}. Move cost: {self.COST_MOVE}.")
                 else:
                     # No door; check for walls
-                    if self.has_wall_between(current, neighbor):
+                    if self.has_wall_between_without_closed_door(current, neighbor):
                         # print(f"[Agent {self.unique_id}] Cannot move to {neighbor} from {current} due to wall.")
                         continue  # Skip if there's a wall without a door
                     move_cost = self.COST_MOVE  # Regular move cost
@@ -541,16 +523,133 @@ class FireRescueAgent(Agent):
         return total_path
     
     def count_walls_between(self, a, b):
-    # Simple implementation; improve as needed
+        # Simple implementation; improve as needed
         count = 0
         current = a
         while current != b:
             next_step = (current[0] + np.sign(b[0] - current[0]),
                         current[1] + np.sign(b[1] - current[1]))
-            if self.has_wall_between(current, next_step):
+            if self.has_wall_between_with_closed_door(current, next_step):
                 count += 1
             current = next_step
         return count
+
+    def find_highest_priority_fire(self):
+        fires = self.model.get_all_fires()
+        if not fires:
+            return None
+        # Filter out fires already targeted by other agents
+        untargeted_fires = [fire for fire in fires if not self.model.is_fire_targeted(fire)]
+        if not untargeted_fires:
+            return None
+        
+        # Use A* to find the closest fire
+        closest_fire = min(
+            untargeted_fires,
+            key=lambda fire: self.a_star(self.pos, fire)
+        )
+
+        print(f"[Agent {self.unique_id}] Found closest fire at {closest_fire}.")
+
+        return closest_fire
+    
+    def find_highest_priority_smoke(self):
+        smokes = self.model.get_all_smokes()
+        if not smokes:
+            return None
+
+        untargeted_smokes = [smoke for smoke in smokes if not self.model.is_smoke_targeted(smoke)]
+        if not untargeted_smokes:
+            return None
+
+        # Use A* to find the closest smoke
+        closest_smoke = min(
+            untargeted_smokes,
+            key=lambda smoke: self.a_star(self.pos, smoke)
+        )
+
+        return closest_smoke
+    
+    def assign_fire_target(self):
+        fire_pos = self.find_highest_priority_fire()
+        if fire_pos:
+            self.target_fire = fire_pos
+            print(f"[Agent {self.unique_id}] Assigned new fire target at {fire_pos}.")
+            # Register the target in the model to prevent other agents from targeting it
+            self.model.fire_targets[self.unique_id] = fire_pos
+            return True
+        else:
+            print(f"[Agent {self.unique_id}] No fires left to target.")
+            return False
+        
+    def assign_smoke_target(self):
+        smoke_pos = self.find_highest_priority_smoke()
+        if smoke_pos:
+            self.target_fire = smoke_pos
+            print(f"[Agent {self.unique_id}] Assigned new smoke target at {smoke_pos}.")
+            # Register the target in the model to prevent other agents from targeting it
+            self.model.smoke_targets[self.unique_id] = smoke_pos
+        else:
+            print(f"[Agent {self.unique_id}] No smoke left to target.")
+    
+    def a_star(self, start, goal):
+        open_set = []
+        heapq.heappush(open_set, (0, start))
+        
+        came_from = {}
+        g_score = {start: 0}
+        
+        while open_set:
+            current = heapq.heappop(open_set)[1]
+            
+            if current == goal:
+                return g_score[current]
+            
+            for neighbor in self.get_neighbors(current):
+                movement_cost = self.get_movement_cost(current, neighbor)
+                tentative_g_score = g_score[current] + movement_cost
+                if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
+                    came_from[neighbor] = current
+                    g_score[neighbor] = tentative_g_score
+                    f_score = tentative_g_score + self.a_star_heuristic(neighbor, goal)
+                    heapq.heappush(open_set, (f_score, neighbor))
+        
+        return float('inf')  # No path found
+    
+    def get_movement_cost(self, current, neighbor):
+        door_state = self.model.check_door(current, neighbor)
+        if door_state == 'closed':
+            return 1 + self.COST_OPEN_DOOR  # Additional cost for opening a closed door
+        else:
+            return 1  
+
+    def get_neighbors(self, pos):
+        neighbors = []
+        directions = [(0, -1), (-1, 0), (0, 1), (1, 0)]  # N, W, S, E
+        
+        for dx, dy in directions:
+            neighbor = (pos[0] + dx, pos[1] + dy)
+            
+            # Check grid bounds
+            if not (0 <= neighbor[0] < self.model.width and 0 <= neighbor[1] < self.model.height):
+                continue
+            
+            # Check for walls
+            if not self.has_wall_between_without_closed_door(pos, neighbor):
+                neighbors.append(neighbor)
+            
+        return neighbors
+
+    def a_star_heuristic(self, a, b):
+        return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+    def heuristic(self, a, b):
+        # Manhattan distance
+        distance = abs(a[0] - b[0]) + abs(a[1] - b[1])
+        # Add wall penalty
+        walls_between = self.count_walls_between(a, b)
+        wall_penalty = walls_between * 3  # Adjust weight as needed
+        return distance + wall_penalty
     
     def validate_target_fire(self):
         # Check if the current target is still a fire
@@ -560,12 +659,3 @@ class FireRescueAgent(Agent):
             # Remove the target from model.fire_targets
             if self.unique_id in self.model.fire_targets:
                 del self.model.fire_targets[self.unique_id]
-
-
-    def heuristic(self, a, b):
-        # Manhattan distance
-        distance = abs(a[0] - b[0]) + abs(a[1] - b[1])
-        # Add wall penalty
-        walls_between = self.count_walls_between(a, b)
-        wall_penalty = walls_between * 3  # Adjust weight as needed
-        return distance + wall_penalty

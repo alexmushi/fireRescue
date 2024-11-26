@@ -13,7 +13,7 @@ from util import get_game_variables, decimal_to_binary, binary_to_decimal, get_w
 from agent import FireRescueAgent
 
 class FireRescueModel(Model):
-    def __init__(self, width=10, height=8, agents=6, seed=None):
+    def __init__(self, width=10, height=8, agents=1, seed=None):
         super().__init__(seed=seed)
         self.width = width
         self.height = height
@@ -44,6 +44,7 @@ class FireRescueModel(Model):
         self.steps = 0
 
         self.fire_targets = {}  # Maps agent IDs to fire positions
+        self.smoke_targets = {}  # Maps agent IDs to smoke positions
 
         self.set_game_data("House1.txt")
 
@@ -57,7 +58,7 @@ class FireRescueModel(Model):
         }
 
         for i in range(agents):
-            is_rescuer = i < 3
+            is_rescuer = i < -1
             agent = FireRescueAgent(self, is_rescuer=is_rescuer)
             entry_point = random.choice(self.entry_points)
             (x, y) = entry_point
@@ -122,37 +123,47 @@ class FireRescueModel(Model):
             return possible_positions, complete_positions
         else:
             return possible_positions
-    
+        
     def has_wall_between(self, pos1, pos2):
+        # No door exists; check walls normally
+        (x1, y1) = pos1
+        (x2, y2) = pos2
+
+        difference_x = x2 - x1
+        difference_y = y2 - y1
+
+        direction = (difference_x, difference_y)
+
+        walls = decimal_to_binary(int(self.walls[pos1]))
+
+        if direction == (0, -1):
+            return walls[0] == '1'
+        elif direction == (-1, 0):
+            return walls[1] == '1'
+        elif direction == (0, 1):
+            return walls[2] == '1'
+        elif direction == (1, 0):
+            return walls[3] == '1'
+        return False
+    
+    def has_wall_between_without_closed_door(self, pos1, pos2):
+        # In this function walls are considered passable if there is a closed door between them
         door_state = self.check_door(pos1, pos2)
         if door_state in ['open', 'destroyed']:
-            # print(f"No wall between {pos1} and {pos2} due to door state: {door_state}")
+            return False
+        elif door_state == 'closed':
+            return False
+        else: 
+            return self.has_wall_between(pos1, pos2)
+    
+    def has_wall_between_with_closed_door(self, pos1, pos2):
+        door_state = self.check_door(pos1, pos2)
+        if door_state in ['open', 'destroyed']:
             return False  # No wall blocking because door is open or destroyed
         elif door_state == 'closed':
-            # print(f"Wall between {pos1} and {pos2} because door is closed.")
             return True  # Wall is present because door is closed
         else:
-            # No door exists; check walls normally
-            (x1, y1) = pos1
-            (x2, y2) = pos2
-
-            difference_x = x2 - x1
-            difference_y = y2 - y1
-
-            direction = (difference_x, difference_y)
-
-            walls = decimal_to_binary(int(self.walls[pos1]))
-
-            if direction == (0, -1):
-                return walls[0] == '1'
-            elif direction == (-1, 0):
-                return walls[1] == '1'
-            elif direction == (0, 1):
-                return walls[2] == '1'
-            elif direction == (1, 0):
-                return walls[3] == '1'
-            return False
-
+            return self.has_wall_between(pos1, pos2)
 
     def check_door(self, cell1, cell2):
         door_key = frozenset([cell1, cell2])
@@ -195,7 +206,13 @@ class FireRescueModel(Model):
             if isinstance(agent, FireRescueAgent) and agent.is_targeting_fire(fire_pos):
                 return True
         return False
-
+    
+    def is_smoke_targeted(self, fire_pos):
+        # Check if any agent is targeting the smoke at fire_pos
+        for agent in self.agents:
+            if isinstance(agent, FireRescueAgent) and agent.is_targeting_smoke(fire_pos):
+                return True
+        return False
     
     def assign_new_points_of_interest(self):
 
@@ -441,6 +458,11 @@ class FireRescueModel(Model):
         # Identify all cells with fire (value 1 in the "fires" layer)
         fire_cells = self.fires.select_cells(lambda x: x == 1)
         return fire_cells
+    
+    def get_all_smokes(self):
+        # Identify all cells with smoke (value 0.5 in the "fires" layer)
+        smoke_cells = self.fires.select_cells(lambda x: x == 0.5)
+        return smoke_cells
     
     def get_fire_cluster_size(self, fire_pos):
         visited = set()
@@ -701,10 +723,10 @@ class FireRescueModel(Model):
 
 
 # Para checar victorias en varias simulaciones
-if __name__ == "__main__":
-    NUM_SIMULATIONS = 1000
-    victories = 0
-    losses = 0
+# if __name__ == "__main__":
+#     NUM_SIMULATIONS = 100
+#     victories = 0
+#     losses = 0
 
 #     for i in range(NUM_SIMULATIONS):
 #         print(f"\n=== Starting Simulation {i + 1} ===")
@@ -722,13 +744,13 @@ if __name__ == "__main__":
 #             print(f"Simulation {i + 1}: Loss")
 #             print(f"People Rescued: {model.people_rescued}")
 
-    # Final Results
-    print("\n=== Simulation Results ===")
-    print(f"Total Simulations: {NUM_SIMULATIONS}")
-    print(f"Victories: {victories}")
-    print(f"Losses: {losses}")
+#     # Final Results
+#     print("\n=== Simulation Results ===")
+#     print(f"Total Simulations: {NUM_SIMULATIONS}")
+#     print(f"Victories: {victories}")
+#     print(f"Losses: {losses}")
 
-""" 
+
 # Debug mode
 if __name__ == "__main__":
     model = FireRescueModel()
@@ -743,4 +765,4 @@ if __name__ == "__main__":
     print(f"Steps: {model.steps}")
     print(f"People Rescued: {model.people_rescued}")
     print(f"People Lost: {model.people_lost}")
-    print(f"Damage Points: {model.damage_points}")   """
+    print(f"Damage Points: {model.damage_points}") 
