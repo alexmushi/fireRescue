@@ -12,7 +12,7 @@ from util import get_game_variables, decimal_to_binary, binary_to_decimal, get_w
 from agent import FireRescueAgent
 
 class FireRescueModel(Model):
-    def __init__(self, width=10, height=8, agents=6, seed=None):
+    def __init__(self, width=10, height=8, agents=1, seed=None):
         super().__init__(seed=seed)
         self.width = width
         self.height = height
@@ -40,7 +40,7 @@ class FireRescueModel(Model):
         self.set_game_data("BeachHouse.txt")
 
         for i in range(agents):
-            is_rescuer = i < 4
+            is_rescuer = i < 5
             agent = FireRescueAgent(self, is_rescuer=is_rescuer)
             entry_point = random.choice(self.entry_points)
             (x, y) = entry_point
@@ -624,11 +624,11 @@ if __name__ == "__main__":
     print(f"Total Simulations: {NUM_SIMULATIONS}")
     print(f"Victories: {victories}")
     print(f"Losses: {losses}")
+ 
 
-
-
+""" 
 # Debug mode
-""" if __name__ == "__main__":
+if __name__ == "__main__":
     model = FireRescueModel()
     print("Initial State:")
     model.print_map(model.walls.T, model.fires.data.T)
@@ -641,4 +641,4 @@ if __name__ == "__main__":
     print(f"Steps: {model.steps}")
     print(f"People Rescued: {model.people_rescued}")
     print(f"People Lost: {model.people_lost}")
-    print(f"Damage Points: {model.damage_points}") """
+    print(f"Damage Points: {model.damage_points}")  """

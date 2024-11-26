@@ -21,9 +21,7 @@ class FireRescueAgent(Agent):
         self.COST_OPEN_DOOR = 1    # Cost to open a door
 
     def step(self):
-
         self.check_stun()
-
         self.validate_target_fire()
 
         # 1. Gain action points at the beginning of the turn
@@ -38,10 +36,13 @@ class FireRescueAgent(Agent):
         else:
             print(f"[Agent {self.unique_id}] No current fire target.")
 
+        # Define the AP threshold for strategic actions
+        AP_THRESHOLD = 4
+
         while self.storedAP > 0:
             action_performed = False
 
-            # If there is smoke at the current cell, extinguish it
+            # 1. Extinguish smoke at current position if present
             if self.model.fires.data[self.pos] == 0.5 and self.storedAP >= self.COST_EXTINGUISH_SMOKE:
                 self.extinguish_smoke(self.pos)
                 action_performed = True
@@ -54,19 +55,10 @@ class FireRescueAgent(Agent):
                 include_center=False
             )
 
-            if self.storedAP >= self.COST_MOVE:
-                target_pos = self.find_highest_priority_fire()
-                if target_pos is None:
-                    break  # No fires left
-                # Register target fire
-                self.model.fire_targets[self.unique_id] = target_pos
-                path = self.find_path_to(target_pos)
-
+            # Attempt to extinguish adjacent fires or smokes
             for neighbor_pos in neighbors:
                 if self.has_wall_between(self.pos, neighbor_pos):
                     continue
-
-                
 
                 fire_value = self.model.fires.data[neighbor_pos]
                 if fire_value == 1 and self.storedAP >= self.COST_EXTINGUISH_FIRE:
@@ -81,94 +73,86 @@ class FireRescueAgent(Agent):
             if action_performed:
                 continue  # Go back to while loop to use storedAP
 
-            # Rescuer agent behavior
-            if self.is_rescuer:
-                if self.hasVictim:
-                    # Check if at exit
-                    if self.model.is_exit(self.pos):
-                        self.drop_victim()
-                        action_performed = True
-                        continue
-                    else:
-                        # Move towards nearest exit
-                        if self.storedAP >= self.COST_MOVE_WITH_VICTIM:
-                            target_pos = self.find_nearest_exit()
-                            if target_pos is None:
-                                break  # No exit found (should not happen)
-                            path = self.find_path_to(target_pos, with_victim=True)
-                            if len(path) > 1:
-                                next_step = path[1]
-                                move_cost = self.calculate_move_cost(self.pos, next_step, with_victim=True)
-                                if self.storedAP >= move_cost:
-                                    self.move_to(next_step, with_victim=True)
-                                    action_performed = True
-                                    continue
-                                else:
-                                    break  # Not enough AP to move
-                            else:
-                                break  # Cannot move further
-                        else:
-                            break  # Not enough AP to move
+            # 3. Strategic Actions Based on AP Threshold
+            if self.storedAP > AP_THRESHOLD:
+                if self.is_rescuer:
+                    action_performed = self.perform_rescuer_actions()
                 else:
-                    # Check if there is a victim or POI at current cell
-                    if self.model.is_victim_at(self.pos):
-                        self.pick_up_victim()
-                        action_performed = True
-                        continue
-                    elif self.model.is_poi_at(self.pos):
-                        self.reveal_poi()
-                        action_performed = True
-                        continue
-                    else:
-                        # Move towards nearest victim or POI
-                        if self.storedAP >= self.COST_MOVE:
-                            target_pos = self.find_nearest_victim_or_poi()
-                            if target_pos is None:
-                                break  # No victims or POIs left
-                            path = self.find_path_to(target_pos)
-                            if len(path) > 1:
-                                next_step = path[1]
-                                move_cost = self.calculate_move_cost(self.pos, next_step)
-                                if self.storedAP >= move_cost:
-                                    self.move_to(next_step)
-                                    action_performed = True
-                                    continue
-                if not self.hasVictim and not action_performed:
-                    self.assign_fire_target()
+                    action_performed = self.perform_non_rescuer_actions()
+
+                if action_performed:
+                    continue  # Action performed; continue the loop
+
+            # 4. If no actions performed and AP <= threshold, save AP
+            print(f"[Agent {self.unique_id}] No immediate actions available and AP <= {AP_THRESHOLD}. Saving AP.")
+            break  # Exit the loop to save AP
+
+    def perform_rescuer_actions(self):
+        """Handles actions specific to rescuer agents when AP > threshold."""
+        if self.hasVictim:
+            # Check if at exit
+            if self.model.is_exit(self.pos):
+                self.drop_victim()
+                return True
             else:
-                # Non-rescuer agents' behavior remains the same
-                if not self.target_fire:
-                    self.assign_fire_target()
-                if self.target_fire and self.storedAP >= self.COST_MOVE:
-                    path = self.find_path_to(self.target_fire)
+                # Move towards nearest exit
+                target_pos = self.find_nearest_exit()
+                if target_pos:
+                    path = self.find_path_to(target_pos, with_victim=True)
+                    if len(path) > 1:
+                        next_step = path[1]
+                        move_cost = self.calculate_move_cost(self.pos, next_step, with_victim=True)
+                        if self.storedAP >= move_cost:
+                            self.move_to(next_step, with_victim=True)
+                            return True
+        else:
+            # Check for victim or POI at current cell
+            if self.model.is_victim_at(self.pos):
+                self.pick_up_victim()
+                return True
+            elif self.model.is_poi_at(self.pos):
+                self.reveal_poi()
+                return True
+            else:
+                # Move towards nearest victim or POI
+                target_pos = self.find_nearest_victim_or_poi()
+                if target_pos:
+                    path = self.find_path_to(target_pos)
                     if len(path) > 1:
                         next_step = path[1]
                         move_cost = self.calculate_move_cost(self.pos, next_step)
-                        # Estimate total cost to reach and extinguish fire
-                        total_cost = move_cost + (len(path) - 2) * self.COST_MOVE + self.COST_EXTINGUISH_FIRE
-                        if self.storedAP >= total_cost:
+                        if self.storedAP >= move_cost:
                             self.move_to(next_step)
-                            action_performed = True
-                            continue
-                        else:
-                            # Decide whether to wait and accumulate AP
-                            if self.storedAP < self.MAX_AP:
-                                break  # Wait to accumulate more AP
-                            else:
-                                # Move closer if possible
-                                if self.storedAP >= move_cost:
-                                    self.move_to(next_step)
-                                    action_performed = True
-                                    continue
-                                else:
-                                    break  # Not enough AP to move
-                    else:
-                        break  # Cannot move further
-                else:
-                    break  # Not enough AP to move
+                            return True
+        return False  # No actions performed
 
-            if not action_performed or self.storedAP <= 0:
-                break
+    def perform_non_rescuer_actions(self):
+        """Handles actions specific to non-rescuer agents when AP > threshold."""
+        if not self.target_fire:
+            self.assign_fire_target()
+
+        if self.target_fire and self.storedAP >= self.COST_MOVE:
+            path = self.find_path_to(self.target_fire)
+            if len(path) > 1:
+                next_step = path[1]
+                move_cost = self.calculate_move_cost(self.pos, next_step)
+                # Estimate total cost to reach and extinguish fire
+                total_cost = move_cost + (len(path) - 2) * self.COST_MOVE + self.COST_EXTINGUISH_FIRE
+                if self.storedAP >= total_cost:
+                    self.move_to(next_step)
+                    return True
+                else:
+                    # Decide whether to wait and accumulate AP or move closer
+                    if self.storedAP < self.MAX_AP:
+                        print(f"[Agent {self.unique_id}] Not enough AP to reach fire. Waiting to accumulate AP.")
+                        return False  # Wait to accumulate more AP
+                    else:
+                        # Move closer if possible
+                        if self.storedAP >= move_cost:
+                            self.move_to(next_step)
+                            return True
+        return False  # No actions performed
+
 
     def pick_up_victim(self):
         if self.model.is_victim_at(self.pos) and not self.hasVictim:
