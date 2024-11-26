@@ -46,6 +46,24 @@ def get_walls(value):
     }
     return walls
 
+def serialize_doors(doors):
+    doors_serialized = [
+        {
+            "coord1": list(coord1),
+            "coord2": list(coord2),
+            "status": status
+        }
+        for door, status in doors.items()
+        for coord1, coord2 in [sorted(door)]
+    ]
+
+    return doors_serialized
+
+def _serialize_door_position(door_key):
+        sorted_positions = sorted(door_key)
+
+        return [list(cell) for cell in sorted_positions]
+
 def get_game_variables(archivo):
     contenido = leer_archivo(archivo).strip().split("\n")
     index = 0

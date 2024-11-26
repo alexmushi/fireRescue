@@ -1,12 +1,13 @@
 # Mesa imports
 from mesa import Model
 from mesa.space import MultiGrid, PropertyLayer
+from mesa.datacollection import DataCollector
 
 # NumPy imports
 import numpy as np
 import random
 
-from util import get_game_variables, decimal_to_binary, binary_to_decimal, get_walls
+from util import get_game_variables, decimal_to_binary, binary_to_decimal, get_walls, _serialize_door_position
 
 # Import the FireRescueAgent class from the agent.py file
 from agent import FireRescueAgent
@@ -16,6 +17,12 @@ class FireRescueModel(Model):
         super().__init__(seed=seed)
         self.width = width
         self.height = height
+        self.firstStep = True
+        self.simulationFinished = False
+
+        self.datacollector = DataCollector(
+            agent_reporters={"Position": lambda a: a.pos}
+        )
 
         self.points_of_interest = PropertyLayer(
             name="Points of Interest", width=width, height=height, default_value='', dtype=str)
@@ -39,13 +46,23 @@ class FireRescueModel(Model):
 
         self.set_game_data("BeachHouse.txt")
 
+        self.changes = {
+            'walls': [],
+            'damage': [],
+            'fires': [],
+            'points_of_interest': [],
+            'doors': [], 
+            'explosions': []
+        }
+
         for i in range(agents):
             is_rescuer = i < 5
             agent = FireRescueAgent(self, is_rescuer=is_rescuer)
             entry_point = random.choice(self.entry_points)
             (x, y) = entry_point
             self.grid.place_agent(agent, (x, y))
-            
+        
+        self.datacollector.collect(self)
 
     def set_game_data(self, archivo):
         walls, damage, points_of_interest, fires, doors, entry_points = get_game_variables(archivo)
@@ -147,17 +164,20 @@ class FireRescueModel(Model):
         if door_key in self.doors:
             if self.doors[door_key] != 'destroyed':
                 self.doors[door_key] = 'open'
+                self.set_doors_changes_cell(door_key, 'open')
     
     def destroy_door(self, cell1, cell2):
         door_key = frozenset([cell1, cell2])
         if door_key in self.doors:
             self.doors[door_key] = 'destroyed'
+            self.set_doors_changes_cell(door_key, 'destroyed')
     
     def close_door(self, cell1, cell2):
         door_key = frozenset([cell1, cell2])
         if door_key in self.doors:
             if self.doors[door_key] != 'destroyed':
                 self.doors[door_key] = 'closed'
+                self.set_doors_changes_cell(door_key, 'closed')
     
     def select_random_internal_cell(self):
         MIN_X, MAX_X = 1, self.width - 2
@@ -198,6 +218,11 @@ class FireRescueModel(Model):
         elif chosen_poi == 'v':
             self.victims -= 1
         
+        self.changes['points_of_interest'].append({
+            'position': list((x, y)),
+            'new_value': chosen_poi
+        })
+    
     def check_missing_points_of_interest(self):
         countVictims = 0
         for agent in self.agents:
@@ -219,12 +244,22 @@ class FireRescueModel(Model):
 
         self.walls[pos] = binary_to_decimal(new_wall_value)
 
-    def damage_wall(self, pos, wall_index_to_damage, apply_damage=True):
+        self.changes['walls'].append({
+            'position': list(pos),
+            'new_value': int(self.walls[pos])
+        })
+
+    def damage_wall(self, pos, wall_index_to_damage, apply_damage = True):
         current_wall_damage = self.damage[pos]
 
         wall_damage_list = list(current_wall_damage)
         wall_damage_list[wall_index_to_damage] += 1
         self.damage[pos] = tuple(wall_damage_list)
+
+        self.changes['damage'].append({
+            'position': list(pos),
+            'new_value': list(self.damage[pos])
+        })
 
         if apply_damage:
             self.damage_points += 1
@@ -260,6 +295,10 @@ class FireRescueModel(Model):
     
     def continue_explosion(self, explosion_base_pos, current_pos):
 
+        self.changes['explosions'].append({
+            'position': list(current_pos)
+        })
+
         (x, y) = current_pos
         (x_base, y_base) = explosion_base_pos
 
@@ -276,9 +315,9 @@ class FireRescueModel(Model):
 
         if new_pos in adjacent_with_no_walls:
             if self.fires.data[new_pos] == 0:
-                self.set_fire_at(new_pos)
+                self.set_fire_changes_cell(new_pos, 1)
             elif self.fires.data[new_pos] == 0.5:
-                self.set_fire_at(new_pos)
+                self.set_fire_changes_cell(new_pos, 1)
             elif self.fires.data[new_pos] == 1:
                 self.continue_explosion(current_pos, new_pos)
         elif self.check_door(current_pos, new_pos) is not None:
@@ -287,9 +326,9 @@ class FireRescueModel(Model):
                 self.destroy_door(current_pos, new_pos)
             elif door_state == 'open' or door_state == 'destroyed':
                 if self.fires.data[new_pos] == 0:
-                    self.set_fire_at(new_pos)
+                    self.set_fire_changes_cell(new_pos, 1)
                 elif self.fires.data[new_pos] == 0.5:
-                    self.set_fire_at(new_pos)
+                    self.set_fire_changes_cell(new_pos, 1)
                 elif self.fires.data[new_pos] == 1:
                     self.continue_explosion(current_pos, new_pos)
         else:
@@ -301,11 +340,15 @@ class FireRescueModel(Model):
     def explosion(self, pos):
         adjacent_with_no_walls, all_adjacent_cells = self.check_walls(pos, True)
 
+        self.changes['explosions'].append({
+            'position': list(pos)
+        })
+
         for adjacent in adjacent_with_no_walls:
             if self.fires.data[adjacent] == 0:
-                self.set_fire_at(adjacent)
+                self.set_fire_changes_cell(adjacent, 1)
             elif self.fires.data[adjacent] == 0.5:
-                self.set_fire_at(adjacent)
+                self.set_fire_changes_cell(adjacent, 1)
             elif self.fires.data[adjacent] == 1:
                 self.continue_explosion(pos, adjacent)
 
@@ -321,9 +364,9 @@ class FireRescueModel(Model):
                     self.destroy_door(pos, cell)
                 elif door_state == 'open' or door_state == 'destroyed':
                     if self.fires.data[cell] == 0:
-                        self.set_fire_at(cell)
+                        self.set_fire_changes_cell(cell, 1)
                     elif self.fires.data[cell] == 0.5:
-                        self.set_fire_at(cell)
+                        self.set_fire_changes_cell(cell, 1)
                     elif self.fires.data[cell] == 1:
                         self.continue_explosion(pos, cell)
             else: 
@@ -359,9 +402,9 @@ class FireRescueModel(Model):
         if self.fires.data[x, y] == 1:
             self.explosion(pos)
         elif self.fires.data[x, y] == 0.5:
-            self.set_fire_at(pos)
+            self.set_fire_changes_cell(pos, 1)
         elif self.fires.data[x, y] == 0:
-            self.fires.set_cell(pos, 0.5)
+            self.set_fire_changes_cell(pos, 0.5)
     
     def convert_smoke_to_fire(self, pos):
         possible_positions, all_adjacent_cells = self.check_walls(pos, True)
@@ -370,7 +413,7 @@ class FireRescueModel(Model):
             current_position = possible_positions[position]
             fire_position = self.fires.data[current_position]
             if fire_position == 1:
-                self.set_fire_at(pos)
+                self.set_fire_changes_cell(pos, 1)
                 break
         
         cells_with_walls = []
@@ -384,7 +427,7 @@ class FireRescueModel(Model):
                 fire_position = self.fires.data[cell]
                 if door_state == 'open':
                     if fire_position == 1:
-                        self.set_fire_at(pos)
+                        self.set_fire_changes_cell(pos, 1)
                         break
 
     def check_smoke(self):
@@ -425,7 +468,6 @@ class FireRescueModel(Model):
 
         return cluster_size
 
-
     def is_victim_at(self, pos):
         poi = self.points_of_interest.data[pos]
         return poi == 'v'
@@ -433,7 +475,6 @@ class FireRescueModel(Model):
     def is_poi_at(self, pos):
         poi = self.points_of_interest.data[pos]
         return poi in ['v', 'f']
-
 
     def reveal_poi_at(self, pos):
         poi_type = self.points_of_interest.data[pos]
@@ -564,13 +605,61 @@ class FireRescueModel(Model):
             return True
         return False
     
+    def set_fire_changes_cell(self, pos, value):
+        # Check to see if a cell with smoke is being set to fire
+        if value == 1.0:
+            self.remove_smoke_change(pos)
+            self.check_victim_in_fire(pos)
+        self.fires.set_cell(pos, value)
+        self.changes['fires'].append({
+            'position': [int(pos[0]), int(pos[1])],
+            'new_value': float(value)
+        })
+    
+    def remove_smoke_change(self, pos):
+        pos_list = [int(pos[0]), int(pos[1])]
+        self.changes['fires'] = [
+            change for change in self.changes['fires']
+            if not (change['position'] == pos_list and change['new_value'] == 0.5)
+        ]
+    
+    def set_doors_changes_cell(self, door_key, value):
+        serialized_position = _serialize_door_position(door_key)
+        self.changes['doors'].append({
+            'position': serialized_position,
+            'new_value': value
+        })
+    
+    def get_all_agent_positions(self):
+        df = self.datacollector.get_agent_vars_dataframe()
+    
+        latest_step = df.index.get_level_values(0).max()
+        
+        # Extract agent positions at the latest step
+        latest_data = df.loc[latest_step]
+        
+        # Convert the Series to a list of dictionaries
+        agents = []
+        for agent_id, position in latest_data.iterrows():
+            agents.append({
+                "agentID": int(agent_id),
+                "position": list(position.iloc[0])
+            })
+
+        return agents
+
     def step(self):
         print(f"[DEBUG] Executing model step {self.steps}")
         print(f"--- Step {self.steps } ---")
         print(f"People Rescued: {self.people_rescued}, People Lost: {self.people_lost}, Damage: {self.damage_points}")
 
         if self.check_game_over():
+            self.simulationFinished = True
             return
+
+        self.changes = { 'walls': [], 'fires': [], 'damage': [], 'points_of_interest': [], 'doors': [], 'explosions': [] }
+        
+        self.datacollector.collect(self)
 
         agents = list(self.agents)
 
@@ -582,24 +671,16 @@ class FireRescueModel(Model):
             print(f"{model.victims} Victims Remaining at ")
             print(f"Locations of Interest: \n{model.points_of_interest.data}")
 
-
-            
-            
             self.assign_fire()
             self.check_smoke()
             self.check_missing_points_of_interest()
-
-            
-        
-        
-        
 
         self.print_map(self.walls.T, self.fires.data.T)
 
 
  # Para checar victorias en varias simulaciones
 if __name__ == "__main__":
-    NUM_SIMULATIONS = 1000
+    NUM_SIMULATIONS = 100
     victories = 0
     losses = 0
 
