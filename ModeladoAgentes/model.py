@@ -707,7 +707,7 @@ class FireRescueModel(Model):
         self.datacollector.collect(self)
 
 
-# Para checar victorias en varias simulaciones
+""" # Para checar victorias en varias simulaciones
 if __name__ == "__main__":
     NUM_SIMULATIONS = 100
     victories = 0
@@ -734,20 +734,20 @@ if __name__ == "__main__":
     print(f"Total Simulations: {NUM_SIMULATIONS}")
     print(f"Victories: {victories}")
     print(f"Losses: {losses}")
-
+ """
 
 # Debug mode
-# if __name__ == "__main__":
-#     model = FireRescueModel()
-#     print("Initial State:")
-#     model.print_map(model.walls.T, model.fires.data.T)
+if __name__ == "__main__":
+     model = FireRescueModel()
+     print("Initial State:")
+     model.print_map(model.walls.T, model.fires.data.T)
 
-#     while not model.check_game_over():
-#         input("Press Enter for the next step...")
-#         model.step()
+     while not model.check_game_over():
+         input("Press Enter for the next step...")
+         model.step()
 
-#     print("\nSimulation Ended")
-#     print(f"Steps: {model.steps}")
-#     print(f"People Rescued: {model.people_rescued}")
-#     print(f"People Lost: {model.people_lost}")
-#     print(f"Damage Points: {model.damage_points}")
+     print("\nSimulation Ended")
+     print(f"Steps: {model.steps}")
+     print(f"People Rescued: {model.people_rescued}")
+     print(f"People Lost: {model.people_lost}")
+     print(f"Damage Points: {model.damage_points}")

@@ -13,6 +13,8 @@ public class AddFiresAndPOI : MonoBehaviour
     [SerializeField] private GameObject mouseDroidPrefab;
     [SerializeField] private GameObject clonePrefab;
     [SerializeField] private GameObject droidPrefab;
+    private Dictionary<Vector2Int, GameObject> fireObjects = new Dictionary<Vector2Int, GameObject>();
+
 
     public AudioSource audioSource;
 
@@ -311,6 +313,48 @@ public class AddFiresAndPOI : MonoBehaviour
             }
         }
         yield return null;
+    }
+
+    public void SynchronizeFires(List<NewStatusDouble> fires, Transform gridParent)
+    {
+        // Create a set of positions where fires currently exist in the model
+        HashSet<Vector2Int> firePositionsInModel = new HashSet<Vector2Int>();
+        foreach (var fire in fires)
+        {
+            Vector2Int pos = new Vector2Int(fire.position[0], fire.position[1]);
+            firePositionsInModel.Add(pos);
+        }
+
+        // Collect fires to be extinguished
+        List<NewStatusDouble> firesToExtinguish = new List<NewStatusDouble>();
+        List<Vector2Int> positionsToRemove = new List<Vector2Int>();
+
+        foreach (var kvp in fireObjects)
+        {
+            Vector2Int pos = kvp.Key;
+            if (!firePositionsInModel.Contains(pos))
+            {
+                NewStatusDouble fireToExtinguish = new NewStatusDouble
+                {
+                    position = new List<int> { pos.x, pos.y },
+                    new_value = 0 // Assuming 0 represents an extinguished fire
+                };
+                firesToExtinguish.Add(fireToExtinguish);
+                positionsToRemove.Add(pos);
+            }
+        }
+
+        // Use the extinguishFires method
+        if (firesToExtinguish.Count > 0)
+        {
+            StartCoroutine(extinguishFires(firesToExtinguish, gridParent));
+        }
+
+        // Remove extinguished fires from the dictionary after they are extinguished
+        foreach (var pos in positionsToRemove)
+        {
+            fireObjects.Remove(pos);
+        }
     }
 
     private IEnumerator ExplosionPlaceFire(List<NewStatusDouble> fires, int expCol, int expRow, Transform gridParent) {
