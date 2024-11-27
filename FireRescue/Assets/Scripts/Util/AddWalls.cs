@@ -43,14 +43,6 @@ public class AddWallsManager : MonoBehaviour
                 string cellName = $"Cell({col},{row})";
                 GameObject cell = gridParent.Find(cellName)?.gameObject;
 
-                if (HelperFunctions.Instance == null)
-                {
-                    Debug.LogError("HelperFunctions.Instance is null");
-                }
-                else
-                {
-                    Debug.Log("HelperFunctions.Instance is not null");
-                }
                 bool isEntryPoint = HelperFunctions.Instance.IsEntryPoint(entryPoints, col, row);
 
                 List<int> doorDirections = new List<int>();
@@ -192,7 +184,7 @@ public class AddWallsManager : MonoBehaviour
         }
     }
 
-        // NEW METHOD: Open a door between two positions
+    
     public IEnumerator OpenDoor(List<List<int>> positions, Transform gridParent)
     {
         // positions[0] and positions[1] represent the two cells between which the door is located
@@ -239,16 +231,6 @@ public class AddWallsManager : MonoBehaviour
 
                 yield return null;
             }
-            else
-            {
-                Debug.LogWarning($"Door {doorName} not found in {cellName} for opening.");
-                yield return null;
-            }
-        }
-        else
-        {
-            Debug.LogWarning($"Cell {cellName} not found for opening door.");
-            yield return null;
         }
     }
 }
