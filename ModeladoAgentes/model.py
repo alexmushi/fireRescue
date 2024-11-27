@@ -44,6 +44,7 @@ class FireRescueModel(Model):
         self.steps = 0
 
         self.fire_targets = {}  # Maps agent IDs to fire positions
+        self.smoke_targets = {}  # Maps agent IDs to smoke positions
 
         self.set_game_data("House1.txt")
 
@@ -57,7 +58,7 @@ class FireRescueModel(Model):
         }
 
         for i in range(agents):
-            is_rescuer = i < 3
+            is_rescuer = i < 1
             agent = FireRescueAgent(self, is_rescuer=is_rescuer)
             entry_point = random.choice(self.entry_points)
             (x, y) = entry_point
@@ -122,37 +123,47 @@ class FireRescueModel(Model):
             return possible_positions, complete_positions
         else:
             return possible_positions
-    
+        
     def has_wall_between(self, pos1, pos2):
+        # No door exists; check walls normally
+        (x1, y1) = pos1
+        (x2, y2) = pos2
+
+        difference_x = x2 - x1
+        difference_y = y2 - y1
+
+        direction = (difference_x, difference_y)
+
+        walls = decimal_to_binary(int(self.walls[pos1]))
+
+        if direction == (0, -1):
+            return walls[0] == '1'
+        elif direction == (-1, 0):
+            return walls[1] == '1'
+        elif direction == (0, 1):
+            return walls[2] == '1'
+        elif direction == (1, 0):
+            return walls[3] == '1'
+        return False
+    
+    def has_wall_between_without_closed_door(self, pos1, pos2):
+        # In this function walls are considered passable if there is a closed door between them
         door_state = self.check_door(pos1, pos2)
         if door_state in ['open', 'destroyed']:
-            # print(f"No wall between {pos1} and {pos2} due to door state: {door_state}")
+            return False
+        elif door_state == 'closed':
+            return False
+        else: 
+            return self.has_wall_between(pos1, pos2)
+    
+    def has_wall_between_with_closed_door(self, pos1, pos2):
+        door_state = self.check_door(pos1, pos2)
+        if door_state in ['open', 'destroyed']:
             return False  # No wall blocking because door is open or destroyed
         elif door_state == 'closed':
-            # print(f"Wall between {pos1} and {pos2} because door is closed.")
             return True  # Wall is present because door is closed
         else:
-            # No door exists; check walls normally
-            (x1, y1) = pos1
-            (x2, y2) = pos2
-
-            difference_x = x2 - x1
-            difference_y = y2 - y1
-
-            direction = (difference_x, difference_y)
-
-            walls = decimal_to_binary(int(self.walls[pos1]))
-
-            if direction == (0, -1):
-                return walls[0] == '1'
-            elif direction == (-1, 0):
-                return walls[1] == '1'
-            elif direction == (0, 1):
-                return walls[2] == '1'
-            elif direction == (1, 0):
-                return walls[3] == '1'
-            return False
-
+            return self.has_wall_between(pos1, pos2)
 
     def check_door(self, cell1, cell2):
         door_key = frozenset([cell1, cell2])
@@ -195,7 +206,13 @@ class FireRescueModel(Model):
             if isinstance(agent, FireRescueAgent) and agent.is_targeting_fire(fire_pos):
                 return True
         return False
-
+    
+    def is_smoke_targeted(self, fire_pos):
+        # Check if any agent is targeting the smoke at fire_pos
+        for agent in self.agents:
+            if isinstance(agent, FireRescueAgent) and agent.is_targeting_smoke(fire_pos):
+                return True
+        return False
     
     def assign_new_points_of_interest(self):
 
@@ -380,10 +397,6 @@ class FireRescueModel(Model):
 
                 self.set_wall_explosions(walls, direction, pos, cell)
 
-    def set_fire_at(self, pos):
-        self.fires.set_cell(pos, 1)
-        self.check_victim_in_fire(pos)
-
     def check_victim_in_fire(self, pos):
         poi = self.points_of_interest.data[pos]
         if poi == 'v':  # Victim
@@ -442,32 +455,10 @@ class FireRescueModel(Model):
         fire_cells = self.fires.select_cells(lambda x: x == 1)
         return fire_cells
     
-    def get_fire_cluster_size(self, fire_pos):
-        visited = set()
-        cluster_size = 0
-        stack = [fire_pos]
-
-        while stack:
-            current = stack.pop()
-            if current in visited:
-                continue
-            visited.add(current)
-
-            # Ensure the cell is part of the fire cluster
-            if self.fires.data[current] == 1:
-                cluster_size += 1
-
-                # Add all orthogonal neighbors (no diagonals)
-                neighbors = self.grid.get_neighborhood(
-                    current,
-                    moore=False,
-                    include_center=False
-                )
-                for neighbor in neighbors:
-                    if neighbor not in visited and not self.has_wall_between(current, neighbor):
-                        stack.append(neighbor)
-
-        return cluster_size
+    def get_all_smokes(self):
+        # Identify all cells with smoke (value 0.5 in the "fires" layer)
+        smoke_cells = self.fires.select_cells(lambda x: x == 0.5)
+        return smoke_cells
 
     def is_victim_at(self, pos):
         poi = self.points_of_interest.data[pos]
@@ -476,6 +467,10 @@ class FireRescueModel(Model):
     def is_poi_at(self, pos):
         poi = self.points_of_interest.data[pos]
         return poi in ['v', 'f']
+    
+    def get_poi_positions(self):
+        positions = np.where(np.isin(self.points_of_interest.data, ['v', 'f']))
+        return list(zip(*positions))
 
     def reveal_poi_at(self, pos):
         poi_type = self.points_of_interest.data[pos]
@@ -702,25 +697,25 @@ class FireRescueModel(Model):
 
 # Para checar victorias en varias simulaciones
 if __name__ == "__main__":
-    NUM_SIMULATIONS = 1000
+    NUM_SIMULATIONS = 100
     victories = 0
     losses = 0
 
-#     for i in range(NUM_SIMULATIONS):
-#         print(f"\n=== Starting Simulation {i + 1} ===")
-#         model = FireRescueModel()
+    for i in range(NUM_SIMULATIONS):
+        print(f"\n=== Starting Simulation {i + 1} ===")
+        model = FireRescueModel()
 
-#         while not model.check_game_over():
-#             model.step()
+        while not model.check_game_over():
+            model.step()
 
-#         # Check the result of the simulation
-#         if model.people_rescued >= 7:
-#             victories += 1
-#             print(f"Simulation {i + 1}: Victory")
-#         else:
-#             losses += 1
-#             print(f"Simulation {i + 1}: Loss")
-#             print(f"People Rescued: {model.people_rescued}")
+        # Check the result of the simulation
+        if model.people_rescued >= 7:
+            victories += 1
+            print(f"Simulation {i + 1}: Victory")
+        else:
+            losses += 1
+            print(f"Simulation {i + 1}: Loss")
+            print(f"People Rescued: {model.people_rescued}")
 
     # Final Results
     print("\n=== Simulation Results ===")
@@ -728,19 +723,19 @@ if __name__ == "__main__":
     print(f"Victories: {victories}")
     print(f"Losses: {losses}")
 
-""" 
+
 # Debug mode
-if __name__ == "__main__":
-    model = FireRescueModel()
-    print("Initial State:")
-    model.print_map(model.walls.T, model.fires.data.T)
+# if __name__ == "__main__":
+#     model = FireRescueModel()
+#     print("Initial State:")
+#     model.print_map(model.walls.T, model.fires.data.T)
 
-    while not model.check_game_over():
-        input("Press Enter for the next step...")
-        model.step()
+#     while not model.check_game_over():
+#         input("Press Enter for the next step...")
+#         model.step()
 
-    print("\nSimulation Ended")
-    print(f"Steps: {model.steps}")
-    print(f"People Rescued: {model.people_rescued}")
-    print(f"People Lost: {model.people_lost}")
-    print(f"Damage Points: {model.damage_points}")   """
+#     print("\nSimulation Ended")
+#     print(f"Steps: {model.steps}")
+#     print(f"People Rescued: {model.people_rescued}")
+#     print(f"People Lost: {model.people_lost}")
+#     print(f"Damage Points: {model.damage_points}") 
