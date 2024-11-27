@@ -22,7 +22,12 @@ class FireRescueAgent(Agent):
         self.COST_OPEN_DOOR = 1    # Cost to open a door
 
     def step(self):
-        
+
+        if 'actions' not in self.model.changes:
+            self.model.changes['actions'] = []
+        else:
+            self.model.changes['actions'].clear()
+
         self.validate_target_fire()
 
         # 1. Gain action points at the beginning of the turn
@@ -185,19 +190,40 @@ class FireRescueAgent(Agent):
             self.model.remove_victim(self.pos)
             print(f"[Agent {self.unique_id}] Picked up a victim at {self.pos}.")
 
+            # Record action
+            self.model.changes['actions'].append({
+                'agent_id': self.unique_id,
+                'action': 'pick_up_victim',
+                'position': list(self.pos)
+            })
+
     def drop_victim(self):
         if self.hasVictim and self.model.is_exit(self.pos):
             self.hasVictim = False
             self.model.people_rescued += 1
-
             print(f"[Agent {self.unique_id}] Dropped off a victim at exit {self.pos}.")
+
+            # Record action
+            self.model.changes['actions'].append({
+                'agent_id': self.unique_id,
+                'action': 'drop_victim',
+                'position': list(self.pos)
+            })
+
 
     def extinguish_fire(self, pos):
         if self.storedAP >= self.COST_EXTINGUISH_FIRE:
             if not self.has_wall_between_with_closed_door(self.pos, pos):
-                self.model.set_fire_changes_cell(pos, 0) # Remove fire
+                self.model.set_fire_changes_cell(pos, 0)  # Remove fire
                 self.storedAP -= self.COST_EXTINGUISH_FIRE
                 print(f"[Agent {self.unique_id}] Extinguished fire at {pos}. Remaining AP: {self.storedAP}")
+
+                # Record action
+                self.model.changes['actions'].append({
+                    'agent_id': self.unique_id,
+                    'action': 'extinguish_fire',
+                    'position': list(pos)
+                })
 
                 # Reset target if extinguished fire was the target
                 if self.target_fire == pos:
@@ -210,6 +236,13 @@ class FireRescueAgent(Agent):
                 self.model.set_fire_changes_cell(pos, 0)  # Remove smoke
                 self.storedAP -= self.COST_EXTINGUISH_SMOKE
                 print(f"[Agent {self.unique_id}] Extinguished smoke at {pos}. Remaining AP: {self.storedAP}")
+
+                # Record action
+                self.model.changes['actions'].append({
+                    'agent_id': self.unique_id,
+                    'action': 'extinguish_smoke',
+                    'position': list(pos)
+                })
 
     def check_and_extinguish(self, current_pos):
         # Check the current cell
@@ -239,6 +272,7 @@ class FireRescueAgent(Agent):
             if self.storedAP >= self.COST_EXTINGUISH_FIRE:
                 print(f"[Agent {self.unique_id}] Fire detected at {pos}. Extinguishing it before moving.")
                 self.extinguish_fire(pos)
+                # Action recorded in extinguish_fire
 
         total_cost = move_cost
         door_state = self.model.check_door(self.pos, pos)
@@ -250,10 +284,25 @@ class FireRescueAgent(Agent):
                 print(f"[Agent {self.unique_id}] Opening door between {self.pos} and {pos}.")
                 self.model.open_door(self.pos, pos)
                 self.storedAP -= self.COST_OPEN_DOOR
+                # Record action of opening door
+                self.model.changes['actions'].append({
+                    'agent_id': self.unique_id,
+                    'action': 'open_door',
+                    'positions': [list(self.pos), list(pos)]
+                })
 
+            prev_pos = self.pos
             self.model.grid.move_agent(self, pos)
             self.storedAP -= move_cost
             print(f"[Agent {self.unique_id}] Moved to {pos}. Remaining AP: {self.storedAP}.")
+
+            # Record move action
+            self.model.changes['actions'].append({
+                'agent_id': self.unique_id,
+                'action': 'move',
+                'from': list(prev_pos),
+                'to': list(pos)
+            })
 
             # Check current cell and adjacent cells for fire or smoke
             self.check_and_extinguish(pos)
@@ -377,15 +426,26 @@ class FireRescueAgent(Agent):
                     print(f"[Agent {self.unique_id}] Extinguished fire at spawn at entry point {nearest_entry}.")
                     self.storedAP -= self.COST_EXTINGUISH_FIRE
 
-    
     def reveal_poi(self):
         poi_type = self.model.reveal_poi_at(self.pos)
         if poi_type == 'v':
             print(f"Victim revealed at {self.pos}")
             # Optionally pick up the victim immediately
             self.pick_up_victim()
+            # Record action
+            self.model.changes['actions'].append({
+                'agent_id': self.unique_id,
+                'action': 'reveal_poi_victim',
+                'position': list(self.pos)
+            })
         elif poi_type == 'f':
             print(f"False alarm revealed at {self.pos}")
+            # Record action
+            self.model.changes['actions'].append({
+                'agent_id': self.unique_id,
+                'action': 'reveal_poi_false_alarm',
+                'position': list(self.pos)
+            })
 
     def is_wall_break_necessary(self, from_pos, to_pos):
         """

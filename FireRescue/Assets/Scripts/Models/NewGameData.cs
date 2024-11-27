@@ -14,6 +14,7 @@ public class NewGameData
     public List<NewStatusString> points_of_interest;
     public List<NewStatusDoors> doors; 
     public List<NewExplosion> explosions;
+    public List<ActionData> actions;
     public List<AgentPosition> agent_positions;
     public bool simulation_finished;
 }
@@ -58,12 +59,14 @@ public class NewExplosion
 {
     public List<int> position;
 }
-/* 
-[System.Serializable]
-public class AgentPosition
-{
-    public int unique_id;
-    public List<int> position; 
-}
 
- */
+[System.Serializable]
+public class ActionData
+{
+    public int agent_id;
+    public string action; // e.g., "move", "extinguish_fire", "open_door", etc.
+    public List<int> position; // For actions involving a single position
+    public List<int> from;     // For movement actions
+    public List<int> to;       // For movement actions
+    public List<List<int>> positions; // For actions involving multiple positions (e.g., open_door)
+}
