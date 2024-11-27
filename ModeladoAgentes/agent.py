@@ -188,6 +188,11 @@ class FireRescueAgent(Agent):
         if self.model.is_victim_at(self.pos) and not self.hasVictim:
             self.hasVictim = True
             self.model.remove_victim(self.pos)
+            (x, y) = self.pos
+            self.model.changes['points_of_interest'].append({
+                'position': list((x, y)),
+                'new_value': 'show_victim'
+            })
             print(f"[Agent {self.unique_id}] Picked up a victim at {self.pos}.")
 
             # Record action
@@ -430,7 +435,6 @@ class FireRescueAgent(Agent):
         poi_type = self.model.reveal_poi_at(self.pos)
         if poi_type == 'v':
             print(f"Victim revealed at {self.pos}")
-            # Optionally pick up the victim immediately
             self.pick_up_victim()
             # Record action
             self.model.changes['actions'].append({
@@ -462,18 +466,6 @@ class FireRescueAgent(Agent):
                 continue
             if not self.has_wall_between_without_closed_door(from_pos, neighbor):
                 return False  # Found an alternative path
-    
-    def count_walls_between(self, a, b):
-        # Simple implementation; improve as needed
-        count = 0
-        current = a
-        while current != b:
-            next_step = (current[0] + np.sign(b[0] - current[0]),
-                        current[1] + np.sign(b[1] - current[1]))
-            if self.has_wall_between_with_closed_door(current, next_step):
-                count += 1
-            current = next_step
-        return count
 
     def find_highest_priority_fire(self):
         fires = self.model.get_all_fires()
