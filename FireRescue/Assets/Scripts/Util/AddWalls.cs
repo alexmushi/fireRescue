@@ -223,14 +223,35 @@ public class AddWallsManager : MonoBehaviour
             Transform doorTransform = cell.transform.Find(doorName);
             if (doorTransform != null)
             {
-                // Implement door opening animation or state change
-                // For simplicity, we'll destroy the door to represent it being opened
-                Destroy(doorTransform.gameObject);
+                Transform emptyMesh1Transform = FindChildWithTag(doorTransform, "EmptyMesh1Tag");
+                if (emptyMesh1Transform != null)
+                {
+                    float moveAmount = 1.2f; // Adjust this value as needed
+                    emptyMesh1Transform.position += Vector3.down * moveAmount;
+                }
 
-                // Optionally, you could animate the door opening instead of destroying it
-
+                // Optionally, wait for a frame if needed
                 yield return null;
             }
         }
+    }
+
+    private Transform FindChildWithTag(Transform parent, string tag)
+    {
+        foreach (Transform child in parent)
+        {
+            if (child.CompareTag(tag))
+            {
+                return child;
+            }
+
+            // Recursively search in the children's children
+            Transform result = FindChildWithTag(child, tag);
+            if (result != null)
+            {
+                return result;
+            }
+        }
+        return null;
     }
 }
