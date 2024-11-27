@@ -372,10 +372,10 @@ class FireRescueAgent(Agent):
 
                 # Check for fire at the entry point
                 if self.model.fires.data[nearest_entry] == 1:
-                    # Convert fire to smoke
-                    self.model.fires.set_cell(nearest_entry, 0.5)
-                    print(f"[Agent {self.unique_id}] Converted fire to smoke at entry point {nearest_entry}.")
-                    self.storedAP -= self.COST_EXTINGUISH_SMOKE
+                    # Extinguish
+                    self.model.fires.set_cell(nearest_entry, 0)
+                    print(f"[Agent {self.unique_id}] Extinguished fire at spawn at entry point {nearest_entry}.")
+                    self.storedAP -= self.COST_EXTINGUISH_FIRE
 
     
     def reveal_poi(self):
