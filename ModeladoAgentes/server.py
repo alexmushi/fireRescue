@@ -52,8 +52,7 @@ class Server(BaseHTTPRequestHandler):
                 "doors": model.changes["doors"], 
                 "explosions": model.changes["explosions"],
                 "agent_positions": model.get_all_agent_positions(),
-                "simulation_finished": model.simulationFinished,
-                "actions": model.changes["actions"] 
+                "simulation_finished": model.simulationFinished
             }
             print(model.changes)
             model.print_map(model.walls.T, model.fires.data.T)
@@ -83,3 +82,4 @@ if __name__ == '__main__':
         run(port=int(argv[1]))
     else:
         run()
+        

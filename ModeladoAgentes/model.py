@@ -13,7 +13,7 @@ from util import get_game_variables, decimal_to_binary, binary_to_decimal, get_w
 from agent import FireRescueAgent
 
 class FireRescueModel(Model):
-    def __init__(self, width=10, height=8, agents=1, seed=None):
+    def __init__(self, width=10, height=8, agents=6, seed=None):
         super().__init__(seed=seed)
         self.width = width
         self.height = height
@@ -35,8 +35,8 @@ class FireRescueModel(Model):
             property_layers=[self.points_of_interest, self.fires])
 
         self.damage_points = 0
-        self.false_alarms = 4
-        self.victims = 8
+        self.max_false_alarms = 5
+        self.max_victims = 10
 
         self.people_rescued = 0
         self.people_lost = 0
@@ -68,7 +68,7 @@ class FireRescueModel(Model):
         self.datacollector.collect(self)
 
     def set_game_data(self, archivo):
-        walls, damage, points_of_interest, fires, doors, entry_points = get_game_variables(archivo)
+        walls, damage, points_of_interest, fires, doors, entry_points, total_victims, total_false_alarms = get_game_variables(archivo)
         for poi in points_of_interest:
             x = poi['x']
             y = poi['y']
@@ -85,6 +85,8 @@ class FireRescueModel(Model):
         self.damage = damage
         self.doors = doors
         self.entry_points = entry_points
+        self.false_alarms = self.max_false_alarms - total_false_alarms
+        self.victims = self.max_victims - total_victims
     
     def check_walls(self, pos, complete=False):
         (x, y) = pos
@@ -734,8 +736,8 @@ if __name__ == "__main__":
     print(f"Total Simulations: {NUM_SIMULATIONS}")
     print(f"Victories: {victories}")
     print(f"Losses: {losses}")
- """
 
+ """
 # Debug mode
 if __name__ == "__main__":
      model = FireRescueModel()

@@ -98,6 +98,8 @@ def get_game_variables(archivo):
     damage.fill((0, 0, 0, 0))
 
     points_of_interest = []
+    total_victims = 0
+    total_false_alarms = 0
     for _ in range(3):
         line = contenido[index].strip()
         parts = line.split()
@@ -105,7 +107,14 @@ def get_game_variables(archivo):
         x = int(parts[1])
         poi_type = parts[2]
         points_of_interest.append({'x': x, 'y': y, 'type': poi_type})
+
+        if poi_type == 'v':
+            total_victims += 1
+        elif poi_type == 'f':
+            total_false_alarms += 1
+
         index += 1
+
     
     fires = []
     for _ in range(10):
@@ -139,4 +148,4 @@ def get_game_variables(archivo):
         entry_points.append((x, y))
         index += 1
 
-    return walls, damage, points_of_interest, fires, doors, entry_points
+    return walls, damage, points_of_interest, fires, doors, entry_points, total_victims, total_false_alarms
