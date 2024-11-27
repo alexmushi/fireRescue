@@ -13,6 +13,8 @@ public class AddAgents : MonoBehaviour
     [SerializeField] private GameObject agent5Prefab;
     [SerializeField] private GameObject agent6Prefab;
 
+    private Dictionary<int, GameObject> agentsDictionary = new Dictionary<int, GameObject>();
+
     private void Awake()
     {
         // Ensure only one instance exists
@@ -47,8 +49,41 @@ public class AddAgents : MonoBehaviour
             }
 
             GameObject agent = Instantiate(agentPrefab, cellPosition, agentRotation);
+            // Se agrega la posición al diccionario
+            agentsDictionary[agentPosition.agentID] = agent;
+
 
             yield return new WaitForSeconds(0.5f);
+        }
+
+        yield return null;
+    }
+
+    public IEnumerator UpdateAgentsPositions(List<AgentPosition> agent_positions, Transform gridParent)
+    {
+        foreach (AgentPosition agentPosition in agent_positions)
+        {
+            if (agentsDictionary.TryGetValue(agentPosition.agentID, out GameObject agent))
+            {
+                string cellName = $"Cell({agentPosition.position[0]},{agentPosition.position[1]})";
+                GameObject cell = gridParent.Find(cellName)?.gameObject;
+
+                if (cell != null)
+                {
+                    Vector3 targetPosition = cell.transform.position;
+
+                    // Optional: Smooth movement using Lerp or MoveTowards
+                    agent.transform.position = targetPosition;
+                }
+                else
+                {
+                    Debug.LogWarning($"Cell {cellName} not found.");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"Agent with ID {agentPosition.agentID} not found in dictionary.");
+            }
         }
 
         yield return null;

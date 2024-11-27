@@ -58,3 +58,12 @@ public class NewExplosion
 {
     public List<int> position;
 }
+/* 
+[System.Serializable]
+public class AgentPosition
+{
+    public int unique_id;
+    public List<int> position; 
+}
+
+ */
