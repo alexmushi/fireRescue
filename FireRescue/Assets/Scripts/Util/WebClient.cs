@@ -96,10 +96,8 @@ public class WebClient : MonoBehaviour
                     yield return StartCoroutine(addFiresAndPOIManager.AddNewFiresAndSmokes(gameData.fires, gameData.width, gameData.height, gridTransform));
 
                     yield return StartCoroutine(addAgentsManager.UpdateAgentsPositions(gameData.agent_positions, gridTransform));
-
                     
                     requestNewData = !gameData.simulation_finished;
-                    print(requestNewData);
                 }
             }
         }

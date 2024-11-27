@@ -365,12 +365,25 @@ public class AddFiresAndPOI : MonoBehaviour
                 GameObject cell = gridParent.Find(cellName)?.gameObject;
                 GameObject fireObject = cell.transform.Find(fireName)?.gameObject;
 
-                if (fireObject == null) continue;
+                if (fireObject != null) {
 
-                FireAnimation fireAnim = fireObject.GetComponent<FireAnimation>();
-                yield return StartCoroutine(fireAnim.PutOutFire());
-                fires.RemoveAt(i);
-                yield return new WaitForSeconds(0.5f);
+                    FireAnimation fireAnim = fireObject.GetComponent<FireAnimation>();
+                    yield return StartCoroutine(fireAnim.PutOutFire());
+                    fires.RemoveAt(i);
+                    yield return new WaitForSeconds(0.5f);
+                    
+                } else {
+
+                    string smokeName = "Smoke at " + cellName;
+                    GameObject smokeObject = cell.transform.Find(smokeName)?.gameObject;
+
+                    if (smokeObject != null) {
+                        SmokeMovement smokeAnim = smokeObject.GetComponent<SmokeMovement>();
+                        yield return StartCoroutine(smokeAnim.PutOutSmoke());
+                        fires.RemoveAt(i);
+                        yield return new WaitForSeconds(0.5f);
+                    }
+                }
             }
         }
         yield return null;

@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 public class SmokeMovement : MonoBehaviour
 {
@@ -9,6 +10,8 @@ public class SmokeMovement : MonoBehaviour
 
     private Vector3 initialScale; // Escala inicial
     private Quaternion initialRotation; // Rotación inicial
+
+    public float duracionScale = 2f;
 
     void Start()
     {
@@ -28,5 +31,27 @@ public class SmokeMovement : MonoBehaviour
 
         // Aplicar ligeros desplazamientos sin cambiar la orientación
         transform.rotation = initialRotation * Quaternion.Euler(distortionX, distortionY, 0);
+    }
+
+    public IEnumerator PutOutSmoke()
+    {
+        yield return StartCoroutine(ScaleDownAndDestroy());
+    }
+
+    private IEnumerator ScaleDownAndDestroy()
+    {
+        Vector3 escalaInicial = transform.localScale;
+        Vector3 escalaFinal = Vector3.zero;
+        float tiempo = 0f;
+
+        while (tiempo < duracionScale)
+        {
+            transform.localScale = Vector3.Lerp(escalaInicial, escalaFinal, tiempo / duracionScale);
+            tiempo += Time.deltaTime;
+            yield return null;
+        }
+
+        transform.localScale = escalaFinal;
+        Destroy(gameObject); // Destruye el objeto después de la reducción de escala
     }
 }
