@@ -60,3 +60,4 @@
 - Homologar que todas las funciones usen A* (26/11/2024).
 - Hacer que los humos también se extingan (26/11/2024).
 - Hacer que los humos desaparezcan si surge un nuevo fuego (26./11/2024).
+- Hacer que se agreguen los nuevos puntos de interés y que se guarde si son verdaderos o no (26/11/2024).

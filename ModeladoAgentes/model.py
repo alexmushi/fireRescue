@@ -696,6 +696,35 @@ class FireRescueModel(Model):
 
 
 # Para checar victorias en varias simulaciones
+# if __name__ == "__main__":
+#     NUM_SIMULATIONS = 100
+#     victories = 0
+#     losses = 0
+
+#     for i in range(NUM_SIMULATIONS):
+#         print(f"\n=== Starting Simulation {i + 1} ===")
+#         model = FireRescueModel()
+
+#         while not model.check_game_over():
+#             model.step()
+
+#         # Check the result of the simulation
+#         if model.people_rescued >= 7:
+#             victories += 1
+#             print(f"Simulation {i + 1}: Victory")
+#         else:
+#             losses += 1
+#             print(f"Simulation {i + 1}: Loss")
+#             print(f"People Rescued: {model.people_rescued}")
+
+#     # Final Results
+#     print("\n=== Simulation Results ===")
+#     print(f"Total Simulations: {NUM_SIMULATIONS}")
+#     print(f"Victories: {victories}")
+#     print(f"Losses: {losses}")
+
+
+# Debug mode 
 if __name__ == "__main__":
     NUM_SIMULATIONS = 100
     victories = 0
@@ -708,34 +737,8 @@ if __name__ == "__main__":
         while not model.check_game_over():
             model.step()
 
-        # Check the result of the simulation
-        if model.people_rescued >= 7:
-            victories += 1
-            print(f"Simulation {i + 1}: Victory")
-        else:
-            losses += 1
-            print(f"Simulation {i + 1}: Loss")
-            print(f"People Rescued: {model.people_rescued}")
-
-    # Final Results
-    print("\n=== Simulation Results ===")
-    print(f"Total Simulations: {NUM_SIMULATIONS}")
-    print(f"Victories: {victories}")
-    print(f"Losses: {losses}")
-
-
-"""  # Debug mode
-if __name__ == "__main__":
-    model = FireRescueModel()
-    print("Initial State:")
-    model.print_map(model.walls.T, model.fires.data.T)
-
-    while not model.check_game_over():
-        input("Press Enter for the next step...")
-        model.step()
-
     print("\nSimulation Ended")
     print(f"Steps: {model.steps}")
     print(f"People Rescued: {model.people_rescued}")
     print(f"People Lost: {model.people_lost}")
-    print(f"Damage Points: {model.damage_points}")   """
+    print(f"Damage Points: {model.damage_points}") 

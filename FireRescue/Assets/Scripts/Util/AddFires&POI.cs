@@ -62,11 +62,18 @@ public class AddFiresAndPOI : MonoBehaviour
                 string poiType = points_of_interest[col][row];
                 if (poiType == "v" || poiType == "f")
                 {
+                    string poiTypeName = "";
+                    if (poiType == "v") {
+                        poiTypeName = "Victim";
+                    } else if (poiType == "f") {
+                        poiTypeName = "Fake";
+                    }
+
                     Vector3 position = cell.transform.position + new Vector3(0, 0.5f, 0);
                     Quaternion rotation = Quaternion.Euler(-90, 0, 0);
                     GameObject poi = UnityEngine.Object.Instantiate(poiPrefab, position, rotation);
                     poi.transform.SetParent(cell.transform);
-                    poi.name = "POI at " + cellName;
+                    poi.name = $"{poiTypeName} POI at " + cellName;
                 }
             }
         }
@@ -513,4 +520,37 @@ public class AddFiresAndPOI : MonoBehaviour
         }
     }
 
+    public IEnumerator placeNewPOI(List<NewStatusString> points_of_interest, Transform gridParent) {
+
+        for (int i = points_of_interest.Count - 1; i >= 0; i--)
+        {
+            NewStatusString poi = points_of_interest[i];
+            int poiCol = poi.position[0];
+            int poiRow = poi.position[1];
+
+            string cellName = $"Cell({poiCol},{poiRow})";
+            GameObject cell = gridParent.Find(cellName)?.gameObject;
+
+            string poiType = poi.new_value;
+            if (poiType == "v" || poiType == "f")
+            {
+                string poiTypeName = "";
+                if (poiType == "v") {
+                    poiTypeName = "Victim";
+                } else if (poiType == "f") {
+                    poiTypeName = "Fake";
+                }
+
+                Vector3 position = cell.transform.position + new Vector3(0, 0.5f, 0);
+                Quaternion rotation = Quaternion.Euler(-90, 0, 0);
+                GameObject poiObject = UnityEngine.Object.Instantiate(poiPrefab, position, rotation);
+                poiObject.transform.SetParent(cell.transform);
+                poiObject.name = $"{poiTypeName} POI at " + cellName;
+            }
+
+            points_of_interest.RemoveAt(i);
+            yield return new WaitForSeconds(0.5f);
+        }
+        yield return null;
+    }
 }
