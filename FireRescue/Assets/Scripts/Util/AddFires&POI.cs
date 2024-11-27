@@ -10,6 +10,11 @@ public class AddFiresAndPOI : MonoBehaviour
     [SerializeField] private GameObject firePrefab;
     [SerializeField] private GameObject poiPrefab;
     [SerializeField] private GameObject smokePrefab;
+    [SerializeField] private GameObject mouseDroidPrefab;
+    [SerializeField] private GameObject clonePrefab;
+    [SerializeField] private GameObject droidPrefab;
+
+    public AudioSource audioSource;
 
     private void Awake()
     {
@@ -439,6 +444,89 @@ public class AddFiresAndPOI : MonoBehaviour
             points_of_interest.RemoveAt(i);
             yield return new WaitForSeconds(0.5f);
         }
+        yield return null;
+    }
+
+    public IEnumerator revealPOI(List<NewStatusString> points_of_interest, Transform gridParent) {
+        
+        for (int i = points_of_interest.Count - 1; i >= 0; i--)
+        {
+            NewStatusString poi = points_of_interest[i];
+            int poiCol = poi.position[0];
+            int poiRow = poi.position[1];
+
+            string cellName = $"Cell({poiCol},{poiRow})";
+            GameObject cell = gridParent.Find(cellName)?.gameObject;
+
+            string poiType = poi.new_value;
+            if (poiType == "reveal")
+            {
+                string fakePoiTypeName = "Fake POI at " + cellName;
+
+                GameObject fakePoi = cell.transform.Find(fakePoiTypeName)?.gameObject;
+
+                if (fakePoi != null) {
+                    Destroy(fakePoi);
+                    points_of_interest.RemoveAt(i);
+                    GameObject poiObject = UnityEngine.Object.Instantiate(mouseDroidPrefab, cell.transform.position, Quaternion.Euler(-90, 0, 0));
+                    poiObject.transform.SetParent(gridParent);
+                    poiObject.name = $"Fake {mouseDroidPrefab.name}";
+                    yield return new WaitForSeconds(0.5f);
+                }
+            }
+            else if (poiType == "death") {
+                string victimPoiTypeName = "Victim POI at " + cellName;
+
+                GameObject victimPoi = cell.transform.Find(victimPoiTypeName)?.gameObject;
+
+                if (!audioSource.isPlaying)
+                    {
+                        audioSource.Play();
+                    }
+
+                Destroy(victimPoi);
+                points_of_interest.RemoveAt(i);
+                yield return new WaitForSeconds(0.5f);
+            } 
+            else if (poiType == "false") {
+                string fakePoiTypeName = "Fake POI at " + cellName;
+
+                GameObject fakePoi = cell.transform.Find(fakePoiTypeName)?.gameObject;
+
+                Destroy(fakePoi);
+                points_of_interest.RemoveAt(i);
+                yield return new WaitForSeconds(0.5f);
+            }
+            else if (poiType == "show_victim") {
+                string victimPoiTypeName = "Victim POI at " + cellName;
+
+                GameObject victimPoi = cell.transform.Find(victimPoiTypeName)?.gameObject;
+
+                int randomIndex = UnityEngine.Random.Range(0, 2);
+                GameObject selectedPrefab = randomIndex == 0 ? droidPrefab : clonePrefab;
+
+                if (victimPoi != null) {
+                    Destroy(victimPoi);
+                    points_of_interest.RemoveAt(i);
+
+                    Quaternion rotation = Quaternion.Euler(0, 0, 0);
+                    Vector3 position = cell.transform.position;
+                    if (selectedPrefab.name == "Clone Trooper") {
+                        rotation = Quaternion.Euler(0, 180, 0);
+                    }
+                    else if (selectedPrefab.name == "R2D2") {
+                        rotation = Quaternion.Euler(-90, 0, 180);
+                        position = cell.transform.position + new Vector3(0, 0.21f, 0);
+                    }
+
+                    GameObject poiObject = UnityEngine.Object.Instantiate(selectedPrefab, position, rotation);
+                    poiObject.transform.SetParent(gridParent);
+                    poiObject.name = $"Victim {selectedPrefab.name}";
+                    yield return new WaitForSeconds(0.5f);
+                }
+            }
+        }
+
         yield return null;
     }
 }
