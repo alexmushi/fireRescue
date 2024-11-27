@@ -135,7 +135,13 @@ public class WebClient : MonoBehaviour
                     yield return StartCoroutine(addAgentsManager.MoveAgent(action.agent_id, action.from, action.to, gridTransform));
                     break;
                 case "extinguish_fire":
-                    yield return StartCoroutine(addFiresAndPOIManager.ExtinguishFireAtPosition(action.position, gridTransform));
+                    NewStatusDouble fireToExtinguish = new NewStatusDouble
+                    {
+                        position = action.position,
+                        new_value = 0 // 0 represents extinguished fire
+                    };
+                    List<NewStatusDouble> firesToExtinguish = new List<NewStatusDouble> { fireToExtinguish };
+                    yield return StartCoroutine(addFiresAndPOIManager.extinguishFires(firesToExtinguish, gridTransform));
                     break;
                 case "extinguish_smoke":
                     yield return StartCoroutine(addFiresAndPOIManager.ExtinguishSmokeAtPosition(action.position, gridTransform));

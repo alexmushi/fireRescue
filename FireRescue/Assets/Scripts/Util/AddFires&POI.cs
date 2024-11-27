@@ -408,33 +408,7 @@ public class AddFiresAndPOI : MonoBehaviour
         yield return null;
     }
 
-    public IEnumerator ExtinguishFireAtPosition(List<int> position, Transform gridParent)
-    {
-        string cellName = $"Cell({position[0]},{position[1]})";
-        GameObject cell = gridParent.Find(cellName)?.gameObject;
 
-        if (cell != null)
-        {
-            Transform fireTransform = cell.transform.Find("Fire at " + cellName);
-            if (fireTransform != null)
-            {
-                // Optionally, play extinguishing animation
-                
-                Destroy(fireTransform.gameObject);
-                yield return null;
-            }
-            else
-            {
-                Debug.LogWarning($"No fire found at {cellName} to extinguish.");
-                yield return null;
-            }
-        }
-        else
-        {
-            Debug.LogWarning($"Cell {cellName} not found for extinguishing fire.");
-            yield return null;
-        }
-    }
 
     // NEW METHOD: Extinguish smoke at a specific position
     public IEnumerator ExtinguishSmokeAtPosition(List<int> position, Transform gridParent)
