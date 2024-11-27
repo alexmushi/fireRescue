@@ -14,6 +14,7 @@ public class AddAgents : MonoBehaviour
     [SerializeField] private GameObject agent6Prefab;
 
     private Dictionary<int, GameObject> agentsDictionary = new Dictionary<int, GameObject>();
+    private Dictionary<int, bool> agentCarryingVictim = new Dictionary<int, bool>();
 
     private void Awake()
     {
@@ -49,8 +50,9 @@ public class AddAgents : MonoBehaviour
             }
 
             GameObject agent = Instantiate(agentPrefab, cellPosition, agentRotation);
-            // Se agrega la posición al diccionario
+            // Add the agent to the dictionary
             agentsDictionary[agentPosition.agentID] = agent;
+            agentCarryingVictim[agentPosition.agentID] = false;
 
 
             yield return new WaitForSeconds(0.5f);
@@ -59,34 +61,83 @@ public class AddAgents : MonoBehaviour
         yield return null;
     }
 
-    public IEnumerator UpdateAgentsPositions(List<AgentPosition> agent_positions, Transform gridParent)
+    // NEW METHOD: Move an agent from one position to another
+    public IEnumerator MoveAgent(int agentID, List<int> fromPosition, List<int> toPosition, Transform gridParent)
     {
-        foreach (AgentPosition agentPosition in agent_positions)
+        if (agentsDictionary.TryGetValue(agentID, out GameObject agent))
         {
-            if (agentsDictionary.TryGetValue(agentPosition.agentID, out GameObject agent))
+            string toCellName = $"Cell({toPosition[0]},{toPosition[1]})";
+            GameObject toCell = gridParent.Find(toCellName)?.gameObject;
+
+            if (toCell != null)
             {
-                string cellName = $"Cell({agentPosition.position[0]},{agentPosition.position[1]})";
-                GameObject cell = gridParent.Find(cellName)?.gameObject;
+                Vector3 startPosition = agent.transform.position;
+                Vector3 targetPosition = toCell.transform.position;
 
-                if (cell != null)
+                // Smooth movement
+                float movementDuration = 0.5f;
+                float elapsedTime = 0f;
+                while (elapsedTime < movementDuration)
                 {
-                    Vector3 targetPosition = cell.transform.position;
-
-                    // Optional: Smooth movement using Lerp or MoveTowards
-                    agent.transform.position = targetPosition;
+                    agent.transform.position = Vector3.Lerp(startPosition, targetPosition, (elapsedTime / movementDuration));
+                    elapsedTime += Time.deltaTime;
+                    yield return null;
                 }
-                else
-                {
-                    Debug.LogWarning($"Cell {cellName} not found.");
-                }
+                agent.transform.position = targetPosition;
             }
             else
             {
-                Debug.LogWarning($"Agent with ID {agentPosition.agentID} not found in dictionary.");
+                Debug.LogWarning($"Cell {toCellName} not found for moving agent.");
             }
+        }
+        else
+        {
+            Debug.LogWarning($"Agent with ID {agentID} not found in dictionary.");
         }
 
         yield return null;
+    }
+
+    // NEW METHOD: Handle agent picking up a victim
+    public IEnumerator PickUpVictim(int agentID, List<int> position, Transform gridParent)
+    {
+        if (agentsDictionary.TryGetValue(agentID, out GameObject agent))
+        {
+            // Set the agent's carrying state to true
+            agentCarryingVictim[agentID] = true;
+            yield return null;
+        }
+        else
+        {
+            Debug.LogWarning($"Agent with ID {agentID} not found in dictionary.");
+            yield return null;
+        }
+    }
+
+    // NEW METHOD: Handle agent dropping off a victim
+    public IEnumerator DropVictim(int agentID, List<int> position, Transform gridParent)
+    {
+        if (agentsDictionary.TryGetValue(agentID, out GameObject agent))
+        {
+            // Check if the agent was carrying a victim
+            if (agentCarryingVictim.ContainsKey(agentID) && agentCarryingVictim[agentID])
+            {
+                // Set the agent's carrying state to false
+                agentCarryingVictim[agentID] = false;
+
+                yield return null;
+            }
+            else
+            {
+                Debug.LogWarning($"Agent {agentID} was not carrying a victim.");
+                yield return null;
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"Agent with ID {agentID} not found in dictionary.");
+            yield return null;
+        }
     }
 
     private GameObject getAgentPrefab(int agentID)
@@ -111,6 +162,9 @@ public class AddAgents : MonoBehaviour
                 break;
             case 6:
                 agentPrefab = agent6Prefab;
+                break;
+            default:
+                Debug.LogWarning($"No prefab assigned for agent ID {agentID}");
                 break;
         }
         return agentPrefab;
@@ -138,6 +192,9 @@ public class AddAgents : MonoBehaviour
                 break;
             case 6:
                 agentRotation = Quaternion.Euler(90, 180, 0);
+                break;
+            default:
+                Debug.LogWarning($"No rotation assigned for agent ID {agentID}");
                 break;
         }
         return agentRotation;

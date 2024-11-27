@@ -54,7 +54,8 @@ class FireRescueModel(Model):
             'fires': [],
             'points_of_interest': [],
             'doors': [], 
-            'explosions': []
+            'explosions': [],
+            'actions': []
         }
 
         for i in range(agents):
@@ -664,7 +665,7 @@ class FireRescueModel(Model):
         if self.currentAgentIndex < len(self.agents):
             agent = self.agents[self.currentAgentIndex]
 
-            self.changes = { 'walls': [], 'fires': [], 'damage': [], 'points_of_interest': [], 'doors': [], 'explosions': [] }
+            self.changes = { 'walls': [], 'fires': [], 'damage': [], 'points_of_interest': [], 'doors': [], 'explosions': [], 'actions': []}
 
             agent.step()
 

@@ -413,6 +413,118 @@ public class AddFiresAndPOI : MonoBehaviour
         yield return null;
     }
 
+    public IEnumerator ExtinguishFireAtPosition(List<int> position, Transform gridParent)
+    {
+        string cellName = $"Cell({position[0]},{position[1]})";
+        GameObject cell = gridParent.Find(cellName)?.gameObject;
+
+        if (cell != null)
+        {
+            Transform fireTransform = cell.transform.Find("Fire at " + cellName);
+            if (fireTransform != null)
+            {
+                // Optionally, play extinguishing animation
+                
+                Destroy(fireTransform.gameObject);
+                yield return null;
+            }
+            else
+            {
+                Debug.LogWarning($"No fire found at {cellName} to extinguish.");
+                yield return null;
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"Cell {cellName} not found for extinguishing fire.");
+            yield return null;
+        }
+    }
+
+    // NEW METHOD: Extinguish smoke at a specific position
+    public IEnumerator ExtinguishSmokeAtPosition(List<int> position, Transform gridParent)
+    {
+        string cellName = $"Cell({position[0]},{position[1]})";
+        GameObject cell = gridParent.Find(cellName)?.gameObject;
+
+        if (cell != null)
+        {
+            Transform smokeTransform = cell.transform.Find("Smoke at " + cellName);
+            if (smokeTransform != null)
+            {
+                // Optionally, play extinguishing animation
+                Destroy(smokeTransform.gameObject);
+                yield return null;
+            }
+            else
+            {
+                Debug.LogWarning($"No smoke found at {cellName} to extinguish.");
+                yield return null;
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"Cell {cellName} not found for extinguishing smoke.");
+            yield return null;
+        }
+    }
+
+    // NEW METHOD: Reveal a victim at a position
+    public IEnumerator RevealVictimAtPosition(List<int> position, Transform gridParent)
+    {
+        string cellName = $"Cell({position[0]},{position[1]})";
+        GameObject cell = gridParent.Find(cellName)?.gameObject;
+
+        if (cell != null)
+        {
+            // Remove the POI placeholder if present
+            Transform poiTransform = cell.transform.Find("POI at " + cellName);
+            if (poiTransform != null)
+            {
+                Destroy(poiTransform.gameObject);
+            }
+
+            // Instantiate the victim
+            // GameObject victim = Instantiate(victimPrefab, cell.transform.position, Quaternion.identity, cell.transform);
+            // victim.name = "Victim at " + cellName;
+
+            yield return null;
+        }
+        else
+        {
+            Debug.LogWarning($"Cell {cellName} not found for revealing victim.");
+            yield return null;
+        }
+    }
+
+    // NEW METHOD: Reveal a false alarm at a position
+    public IEnumerator RevealFalseAlarmAtPosition(List<int> position, Transform gridParent)
+    {
+        string cellName = $"Cell({position[0]},{position[1]})";
+        GameObject cell = gridParent.Find(cellName)?.gameObject;
+
+        if (cell != null)
+        {
+            // Remove the POI placeholder if present
+            Transform poiTransform = cell.transform.Find("POI at " + cellName);
+            if (poiTransform != null)
+            {
+                Destroy(poiTransform.gameObject);
+            }
+
+            // Instantiate the false alarm object
+            //GameObject falseAlarm = Instantiate(falseAlarmPrefab, cell.transform.position, Quaternion.identity, cell.transform);
+            //falseAlarm.name = "FalseAlarm at " + cellName;
+
+            yield return null;
+        }
+        else
+        {
+            Debug.LogWarning($"Cell {cellName} not found for revealing false alarm.");
+            yield return null;
+        }
+    }
+
     public IEnumerator placeNewPOI(List<NewStatusString> points_of_interest, Transform gridParent) {
 
         for (int i = points_of_interest.Count - 1; i >= 0; i--)

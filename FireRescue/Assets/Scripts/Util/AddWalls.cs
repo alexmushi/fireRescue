@@ -1,6 +1,8 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using System;
-using System.Collections.Generic;
+
 
 public class AddWallsManager : MonoBehaviour
 {
@@ -41,6 +43,14 @@ public class AddWallsManager : MonoBehaviour
                 string cellName = $"Cell({col},{row})";
                 GameObject cell = gridParent.Find(cellName)?.gameObject;
 
+                if (HelperFunctions.Instance == null)
+                {
+                    Debug.LogError("HelperFunctions.Instance is null");
+                }
+                else
+                {
+                    Debug.Log("HelperFunctions.Instance is not null");
+                }
                 bool isEntryPoint = HelperFunctions.Instance.IsEntryPoint(entryPoints, col, row);
 
                 List<int> doorDirections = new List<int>();
@@ -179,6 +189,66 @@ public class AddWallsManager : MonoBehaviour
             Quaternion rotation = Quaternion.Euler(-90, 0, 90);
             GameObject newDoorFrame = UnityEngine.Object.Instantiate(entryPointPrefab, position, rotation, cell.transform);
             newDoorFrame.name = $"Right Entry Door at {cell.name}";
+        }
+    }
+
+        // NEW METHOD: Open a door between two positions
+    public IEnumerator OpenDoor(List<List<int>> positions, Transform gridParent)
+    {
+        // positions[0] and positions[1] represent the two cells between which the door is located
+        List<int> pos1 = positions[0];
+        List<int> pos2 = positions[1];
+
+        int direction = HelperFunctions.Instance.CheckDirection(pos1[0], pos1[1], pos2[0], pos2[1]);
+
+        string cellName = "";
+        string doorName = "";
+
+        if (direction == 0) // North
+        {
+            cellName = $"Cell({pos1[0]},{pos1[1] - 1})";
+            doorName = HelperFunctions.Instance.GetDirectionName(2, "Door", pos1[0], pos1[1] - 1);
+        }
+        else if (direction == 1) // West
+        {
+            cellName = $"Cell({pos1[0] - 1},{pos1[1]})";
+            doorName = HelperFunctions.Instance.GetDirectionName(3, "Door", pos1[0] - 1, pos1[1]);
+        }
+        else if (direction == 2) // South
+        {
+            cellName = $"Cell({pos1[0]},{pos1[1]})";
+            doorName = HelperFunctions.Instance.GetDirectionName(2, "Door", pos1[0], pos1[1]);
+        }
+        else if (direction == 3) // East
+        {
+            cellName = $"Cell({pos1[0]},{pos1[1]})";
+            doorName = HelperFunctions.Instance.GetDirectionName(3, "Door", pos1[0], pos1[1]);
+        }
+
+        GameObject cell = gridParent.Find(cellName)?.gameObject;
+        if (cell != null)
+        {
+            Transform doorTransform = cell.transform.Find(doorName);
+            if (doorTransform != null)
+            {
+                // Implement door opening animation or state change
+                // For simplicity, we'll destroy the door to represent it being opened
+                Destroy(doorTransform.gameObject);
+
+                // Optionally, you could animate the door opening instead of destroying it
+
+                yield return null;
+            }
+            else
+            {
+                Debug.LogWarning($"Door {doorName} not found in {cellName} for opening.");
+                yield return null;
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"Cell {cellName} not found for opening door.");
+            yield return null;
         }
     }
 }
