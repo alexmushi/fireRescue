@@ -52,6 +52,7 @@ class Server(BaseHTTPRequestHandler):
                 "doors": model.changes["doors"], 
                 "explosions": model.changes["explosions"],
                 "agent_positions": model.get_all_agent_positions(),
+                "actions": model.changes["actions"],
                 "simulation_finished": model.simulationFinished
             }
             print(model.changes)

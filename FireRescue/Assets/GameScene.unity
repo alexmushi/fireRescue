@@ -491,7 +491,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   wallPrefab: {fileID: 3027849048383625404, guid: 5ecb9f7e3ec1c496a9a40f80a6953c88, type: 3}
-  doorPrefab: {fileID: 1318299707811654500, guid: 88bdba75e173c4e7c9bc895f0070411a, type: 3}
+  doorPrefab: {fileID: 8454849392539250065, guid: e0fc593fc5295475dbf49997e50964dd, type: 3}
   entryPointPrefab: {fileID: 2466944381653522108, guid: 9ba08e8a355e14915995cdbd45ab36ed, type: 3}
 --- !u!4 &942549084
 Transform:
