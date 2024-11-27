@@ -117,23 +117,8 @@ public class WebClient : MonoBehaviour
                         // Process actions in the order they occurred
                         yield return StartCoroutine(ProcessActions(gameData, gridTransform));
 
-                    yield return StartCoroutine(addFiresAndPOIManager.Explosion(
-                        gameData.explosions, 
-                        gameData.fires, 
-                        gameData.walls, 
-                        gameData.damage, 
-                        gameData.doors, 
-                        gameData.width, 
-                        gameData.height, 
-                        gridTransform));
-
-                    yield return StartCoroutine(addFiresAndPOIManager.AddNewFiresAndSmokes(gameData.fires, gameData.width, gameData.height, gridTransform));
-
-                    yield return StartCoroutine(addAgentsManager.UpdateAgentsPositions(gameData.agent_positions, gridTransform));
-
-                    yield return StartCoroutine(addFiresAndPOIManager.placeNewPOI(gameData.points_of_interest, gridTransform));
-                    
-                    requestNewData = !gameData.simulation_finished;
+                        requestNewData = !gameData.simulation_finished;
+                    }
                 }
             }
         }
