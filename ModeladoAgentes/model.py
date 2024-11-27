@@ -13,7 +13,7 @@ from util import get_game_variables, decimal_to_binary, binary_to_decimal, get_w
 from agent import FireRescueAgent
 
 class FireRescueModel(Model):
-    def __init__(self, width=10, height=8, agents=1, seed=None):
+    def __init__(self, width=10, height=8, agents=6, seed=None):
         super().__init__(seed=seed)
         self.width = width
         self.height = height
@@ -467,6 +467,10 @@ class FireRescueModel(Model):
     def is_poi_at(self, pos):
         poi = self.points_of_interest.data[pos]
         return poi in ['v', 'f']
+    
+    def get_poi_positions(self):
+        positions = np.where(np.isin(self.points_of_interest.data, ['v', 'f']))
+        return list(zip(*positions))
 
     def reveal_poi_at(self, pos):
         poi_type = self.points_of_interest.data[pos]
@@ -692,46 +696,46 @@ class FireRescueModel(Model):
 
 
 # Para checar victorias en varias simulaciones
-# if __name__ == "__main__":
-#     NUM_SIMULATIONS = 1000
-#     victories = 0
-#     losses = 0
+if __name__ == "__main__":
+    NUM_SIMULATIONS = 100
+    victories = 0
+    losses = 0
 
-#     for i in range(NUM_SIMULATIONS):
-#         print(f"\n=== Starting Simulation {i + 1} ===")
-#         model = FireRescueModel()
+    for i in range(NUM_SIMULATIONS):
+        print(f"\n=== Starting Simulation {i + 1} ===")
+        model = FireRescueModel()
 
-#         while not model.check_game_over():
-#             model.step()
+        while not model.check_game_over():
+            model.step()
 
-#         # Check the result of the simulation
-#         if model.people_rescued >= 7:
-#             victories += 1
-#             print(f"Simulation {i + 1}: Victory")
-#         else:
-#             losses += 1
-#             print(f"Simulation {i + 1}: Loss")
-#             print(f"People Rescued: {model.people_rescued}")
+        # Check the result of the simulation
+        if model.people_rescued >= 7:
+            victories += 1
+            print(f"Simulation {i + 1}: Victory")
+        else:
+            losses += 1
+            print(f"Simulation {i + 1}: Loss")
+            print(f"People Rescued: {model.people_rescued}")
 
-#     # Final Results
-#     print("\n=== Simulation Results ===")
-#     print(f"Total Simulations: {NUM_SIMULATIONS}")
-#     print(f"Victories: {victories}")
-#     print(f"Losses: {losses}")
+    # Final Results
+    print("\n=== Simulation Results ===")
+    print(f"Total Simulations: {NUM_SIMULATIONS}")
+    print(f"Victories: {victories}")
+    print(f"Losses: {losses}")
 
 
 # Debug mode
-if __name__ == "__main__":
-    model = FireRescueModel()
-    print("Initial State:")
-    model.print_map(model.walls.T, model.fires.data.T)
+# if __name__ == "__main__":
+#     model = FireRescueModel()
+#     print("Initial State:")
+#     model.print_map(model.walls.T, model.fires.data.T)
 
-    while not model.check_game_over():
-        input("Press Enter for the next step...")
-        model.step()
+#     while not model.check_game_over():
+#         input("Press Enter for the next step...")
+#         model.step()
 
-    print("\nSimulation Ended")
-    print(f"Steps: {model.steps}")
-    print(f"People Rescued: {model.people_rescued}")
-    print(f"People Lost: {model.people_lost}")
-    print(f"Damage Points: {model.damage_points}") 
+#     print("\nSimulation Ended")
+#     print(f"Steps: {model.steps}")
+#     print(f"People Rescued: {model.people_rescued}")
+#     print(f"People Lost: {model.people_lost}")
+#     print(f"Damage Points: {model.damage_points}") 

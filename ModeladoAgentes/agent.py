@@ -85,7 +85,6 @@ class FireRescueAgent(Agent):
 
         print(f"[Agent {self.unique_id}] Ended turn with {self.storedAP} AP.")
 
-
     def perform_rescuer_actions(self):
         """Handles actions specific to rescuer agents when AP > threshold."""
         if self.hasVictim:
@@ -114,7 +113,7 @@ class FireRescueAgent(Agent):
                 return True
             else:
                 # Move towards nearest victim or POI
-                target_pos = self.find_nearest_victim_or_poi()
+                target_pos = self.find_nearest_poi()
                 if target_pos:
                     path, _ = self.a_star(self.pos, target_pos)
                     if len(path) > 1:
@@ -259,17 +258,6 @@ class FireRescueAgent(Agent):
         else:
             print(f"[Agent {self.unique_id}] Not enough AP to move to {pos}. Needed {total_cost}, had {self.storedAP}.")
 
-    def calculate_move_cost(self, from_pos, to_pos, with_victim=False):
-        move_cost = self.COST_MOVE_WITH_VICTIM if with_victim else self.COST_MOVE
-        cost = move_cost
-        if self.has_wall_between_without_closed_door(from_pos, to_pos):
-            cost += self.COST_DAMAGE_WALL  # Cost to damage wall
-        else:
-            door_state = self.model.check_door(from_pos, to_pos)
-            if door_state == 'closed':
-                cost += self.COST_OPEN_DOOR
-        return cost
-
     def check_actions_after_move(self, pos, remaining_ap):
         actions_available = False
         neighbors = self.model.grid.get_neighborhood(
@@ -331,50 +319,42 @@ class FireRescueAgent(Agent):
         return hasattr(self, "target_smoke") and self.target_smoke == smoke_pos
             
     def find_nearest_exit(self):
-        # Find the nearest exit cell
-        queue = [(0, self.pos)]
-        visited = set()
-        while queue:
-            cost, current_pos = heapq.heappop(queue)
-            if current_pos in visited:
-                continue
-            visited.add(current_pos)
+        # Get positions of all exits
+        exit_positions = list(self.model.entry_points)
+        
+        if not exit_positions:
+            return None  # No exits available
 
-            if self.model.is_exit(current_pos):
-                return current_pos
+        min_total_cost = float('inf')
+        closest_exit = None
 
-            neighbors = self.model.grid.get_neighborhood(
-                current_pos,
-                moore=False,
-                include_center=False
-            )
-            for neighbor in neighbors:
-                if neighbor not in visited and self.can_move_between(current_pos, neighbor):
-                    heapq.heappush(queue, (cost + 1, neighbor))
-        return None
+        # Iterate over each exit to find the one with the minimal total cost
+        for exit_pos in exit_positions:
+            path, total_cost = self.a_star(self.pos, exit_pos)
+            if path and total_cost < min_total_cost:
+                min_total_cost = total_cost
+                closest_exit = exit_pos
+
+        return closest_exit
     
-    def find_nearest_victim_or_poi(self):
-    # Find the nearest cell with a victim or POI
-        queue = [(0, self.pos)]
-        visited = set()
-        while queue:
-            cost, current_pos = heapq.heappop(queue)
-            if current_pos in visited:
-                continue
-            visited.add(current_pos)
+    def find_nearest_poi(self):
+        # Get positions of all POIs
+        poi_positions = self.model.get_poi_positions()
+        
+        if not poi_positions:
+            return None  
 
-            if self.model.is_victim_at(current_pos) or self.model.is_poi_at(current_pos):
-                return current_pos
+        min_total_cost = float('inf')
+        closest_poi = None
 
-            neighbors = self.model.grid.get_neighborhood(
-                current_pos,
-                moore=False,
-                include_center=False
-            )
-            for neighbor in neighbors:
-                if neighbor not in visited and self.can_move_between(current_pos, neighbor):
-                    heapq.heappush(queue, (cost + 1, neighbor))
-        return None
+        # Iterate over each POI to find the one with the minimal total cost
+        for poi_pos in poi_positions:
+            path, total_cost = self.a_star(self.pos, poi_pos)
+            if path and total_cost < min_total_cost:
+                min_total_cost = total_cost
+                closest_poi = poi_pos
+
+        return closest_poi
     
     def check_stun(self):
         # Check if the agent is in the same cell as a fire
@@ -382,7 +362,7 @@ class FireRescueAgent(Agent):
             print(f"[Agent {self.unique_id}] stunned at {self.pos}. Escaping to nearest entry point.")
 
             # Find the nearest entry point
-            nearest_entry = self.find_nearest_entry_point()
+            nearest_entry = self.find_nearest_exit()
             if nearest_entry:
                 # Move instantly to the entry point
                 self.model.grid.move_agent(self, nearest_entry)
@@ -393,31 +373,6 @@ class FireRescueAgent(Agent):
                     # Convert fire to smoke
                     self.model.fires.set_cell(nearest_entry, 0.5)
                     print(f"[Agent {self.unique_id}] Converted fire to smoke at entry point {nearest_entry}.")
-
-    def find_nearest_entry_point(self):
-        # Use A* or a simple breadth-first search to find the closest entry point
-        queue = [(0, self.pos)]
-        visited = set()
-        while queue:
-            cost, current_pos = heapq.heappop(queue)
-            if current_pos in visited:
-                continue
-            visited.add(current_pos)
-
-            # Check if this is an entry point
-            if self.model.is_exit(current_pos):
-                return current_pos
-
-            # Explore neighbors
-            neighbors = self.model.grid.get_neighborhood(
-                current_pos,
-                moore=False,
-                include_center=False
-            )
-            for neighbor in neighbors:
-                if neighbor not in visited and not self.has_wall_between_with_closed_door(current_pos, neighbor):
-                    heapq.heappush(queue, (cost + 1, neighbor))
-        return None
     
     def reveal_poi(self):
         poi_type = self.model.reveal_poi_at(self.pos)
@@ -571,14 +526,6 @@ class FireRescueAgent(Agent):
 
     def a_star_heuristic(self, a, b):
         return abs(a[0] - b[0]) + abs(a[1] - b[1])
-
-    def heuristic(self, a, b):
-        # Manhattan distance
-        distance = abs(a[0] - b[0]) + abs(a[1] - b[1])
-        # Add wall penalty
-        walls_between = self.count_walls_between(a, b)
-        wall_penalty = walls_between * 3  # Adjust weight as needed
-        return distance + wall_penalty
     
     def validate_target_fire(self):
         # Check if the current target is still a fire
