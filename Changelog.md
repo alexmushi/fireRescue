@@ -59,3 +59,4 @@
 - Arreglar funcion de shake en camara para explosiones (26/11/2024).
 - Homologar que todas las funciones usen A* (26/11/2024).
 - Hacer que los humos también se extingan (26/11/2024).
+- Hacer que los humos desaparezcan si surge un nuevo fuego (26./11/2024).

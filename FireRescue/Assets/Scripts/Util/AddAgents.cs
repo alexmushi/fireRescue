@@ -42,7 +42,7 @@ public class AddAgents : MonoBehaviour
 
             Vector3 cellPosition = cell.transform.position;
             if (agentPosition.agentID == 1) {
-                cellPosition = cell.transform.position + new Vector3(0.3f, 0, 0);
+                cellPosition = cell.transform.position + new Vector3(-0.3f, 0, 0);
             }
             else if (agentPosition.agentID == 5) {
                 cellPosition = cell.transform.position + new Vector3(0, 0.15f, 0);
@@ -122,22 +122,22 @@ public class AddAgents : MonoBehaviour
         switch (agentID)
         {
             case 1:
-                agentRotation = Quaternion.identity;
+                agentRotation = Quaternion.Euler(0, 180, 0);
                 break;
             case 2:
-                agentRotation = Quaternion.identity;
+                agentRotation = Quaternion.Euler(0, 180, 0);
                 break;
             case 3:
-                agentRotation = Quaternion.identity;
+                agentRotation = Quaternion.Euler(0, 180, 0);
                 break;
             case 4:
-                agentRotation = Quaternion.Euler(-90, 0, 0);
+                agentRotation = Quaternion.Euler(-90, 180, 0);
                 break;
             case 5:
-                agentRotation = Quaternion.identity;
+                agentRotation = Quaternion.Euler(0, 180, 0);
                 break;
             case 6:
-                agentRotation = Quaternion.Euler(90, 0, 0);
+                agentRotation = Quaternion.Euler(90, 180, 0);
                 break;
         }
         return agentRotation;
