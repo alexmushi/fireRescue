@@ -18,7 +18,6 @@ public class WebClient : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        Debug.Log("Starting initial data request...");
         string json = "{}"; 
         StartCoroutine(SendData(json));
     }
@@ -27,7 +26,6 @@ public class WebClient : MonoBehaviour
     void Update()
     {
         if (requestNewData == true && isSendingData == false) {
-            Debug.Log("Requesting new data...");
             string json = "{}";
             StartCoroutine(SendData(json));
         }
@@ -56,24 +54,12 @@ public class WebClient : MonoBehaviour
             else
             {
                 string jsonResponse = www.downloadHandler.text;
-                Debug.Log("Received response from server:");
-                Debug.Log(jsonResponse);
 
                 if (isInitialData) {
                     InitialGameData gameData = null;
                     try {
                         // Deserialize JSON and create grid
                         gameData = JsonConvert.DeserializeObject<InitialGameData>(jsonResponse);
-                        Debug.Log("Received JSON Response:");
-                        Debug.Log(jsonResponse);
-
-                        Debug.Log("Received initial game data:");
-                        Debug.Log($"Width: {gameData.width}, Height: {gameData.height}");
-                        Debug.Log($"Number of walls: {gameData.walls.Count}");
-                        Debug.Log($"Number of doors: {gameData.doors.Count}");
-                        Debug.Log($"Number of entry points: {gameData.entry_points.Count}");
-                        Debug.Log($"Number of fires: {gameData.fires.Count}");
-                        Debug.Log($"Number of agents: {gameData.agent_positions.Count}");
                     }
                     catch (System.Exception ex)
                     {
@@ -155,17 +141,15 @@ public class WebClient : MonoBehaviour
                 case "open_door":
                     yield return StartCoroutine(addWallsManager.OpenDoor(action.positions, gridTransform));
                     break;
-                case "pick_up_victim":
-                    yield return StartCoroutine(addAgentsManager.PickUpVictim(action.agent_id, action.position, gridTransform));
-                    break;
                 case "drop_victim":
                     yield return StartCoroutine(addAgentsManager.DropVictim(action.agent_id, action.position, gridTransform));
                     break;
-                case "reveal_poi_victim":
-                    yield return StartCoroutine(addFiresAndPOIManager.RevealVictimAtPosition(action.position, gridTransform));
+                case "pick_up_victim":
+                    yield return StartCoroutine(addFiresAndPOIManager.RevealVictimAtPosition(action.position, gameData.points_of_interest, gridTransform));
+                    yield return StartCoroutine(addAgentsManager.PickUpVictim(action.agent_id, action.position, gridTransform));
                     break;
                 case "reveal_poi_false_alarm":
-                    yield return StartCoroutine(addFiresAndPOIManager.RevealFalseAlarmAtPosition(action.position, gridTransform));
+                    yield return StartCoroutine(addFiresAndPOIManager.RevealFalseAlarmAtPosition(action.position, gameData.points_of_interest, gridTransform));
                     break;
                 // Add other cases as needed
                 default:
@@ -191,6 +175,16 @@ public class WebClient : MonoBehaviour
             gameData.doors,
             gameData.width,
             gameData.height,
+            gridTransform
+        ));
+
+        yield return StartCoroutine(addFiresAndPOIManager.getRidOfPOI(
+            gameData.points_of_interest,
+            gridTransform
+        ));
+        
+        yield return StartCoroutine(addFiresAndPOIManager.placeNewPOI(
+            gameData.points_of_interest,
             gridTransform
         ));
 

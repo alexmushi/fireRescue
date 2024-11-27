@@ -13,7 +13,7 @@ from util import get_game_variables, decimal_to_binary, binary_to_decimal, get_w
 from agent import FireRescueAgent
 
 class FireRescueModel(Model):
-    def __init__(self, width=10, height=8, agents=6, seed=None):
+    def __init__(self, width=10, height=8, agents=1, seed=None):
         super().__init__(seed=seed)
         self.width = width
         self.height = height

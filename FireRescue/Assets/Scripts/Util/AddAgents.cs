@@ -107,11 +107,6 @@ public class AddAgents : MonoBehaviour
             agentCarryingVictim[agentID] = true;
             yield return null;
         }
-        else
-        {
-            Debug.LogWarning($"Agent with ID {agentID} not found in dictionary.");
-            yield return null;
-        }
     }
 
     // NEW METHOD: Handle agent dropping off a victim
