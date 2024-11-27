@@ -84,6 +84,12 @@ public class AddFiresAndPOI : MonoBehaviour
 
             if (fire.new_value == 1)
             {
+                GameObject previousSmoke = cell.transform.Find("Smoke at " + cellName)?.gameObject;
+
+                if (previousSmoke != null) {
+                    Destroy(previousSmoke);
+                }
+                
                 GameObject newFire = UnityEngine.Object.Instantiate(firePrefab, cell.transform.position, Quaternion.identity);
                 newFire.transform.SetParent(cell.transform);
                 newFire.name = "Fire at " + cellName;
@@ -338,6 +344,12 @@ public class AddFiresAndPOI : MonoBehaviour
 
         if (fire.new_value == 1)
         {
+            GameObject previousSmoke = cell.transform.Find("Smoke at " + cellName)?.gameObject;
+
+            if (previousSmoke != null) {
+                Destroy(previousSmoke);
+            }
+
             GameObject newFire = UnityEngine.Object.Instantiate(firePrefab, cell.transform.position, Quaternion.identity);
             newFire.transform.SetParent(cell.transform);
             newFire.name = "Fire at " + cellName;
@@ -371,7 +383,7 @@ public class AddFiresAndPOI : MonoBehaviour
                     yield return StartCoroutine(fireAnim.PutOutFire());
                     fires.RemoveAt(i);
                     yield return new WaitForSeconds(0.5f);
-                    
+
                 } else {
 
                     string smokeName = "Smoke at " + cellName;
