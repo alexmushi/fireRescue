@@ -17,6 +17,7 @@ public class AddFiresAndPOI : MonoBehaviour
 
 
     public AudioSource audioSource;
+    public AudioSource mouseDroidAudioSource;
 
     private void Awake()
     {
@@ -568,6 +569,14 @@ public class AddFiresAndPOI : MonoBehaviour
                             GameObject poiObject = UnityEngine.Object.Instantiate(mouseDroidPrefab, cell.transform.position, Quaternion.Euler(-90, 0, 0));
                             poiObject.transform.SetParent(gridParent);
                             poiObject.name = $"Fake {mouseDroidPrefab.name}";
+
+                            StartCoroutine(MoveFakePOI(poiObject));
+
+                            if (!mouseDroidAudioSource.isPlaying)
+                            {
+                                mouseDroidAudioSource.Play();
+                            }
+
                             yield return new WaitForSeconds(0.5f);
                         }
                     }
@@ -576,6 +585,38 @@ public class AddFiresAndPOI : MonoBehaviour
                 }
             }
         }
+    }
+
+    private IEnumerator MoveFakePOI(GameObject poiObject)
+    {
+        // Move in circles for 2 seconds
+        float duration = 3f;
+        float time = 0f;
+        Vector3 center = poiObject.transform.position;
+        float radius = 0.5f;
+        while (time < duration)
+        {
+            time += Time.deltaTime;
+            float angle = time * Mathf.PI * 2f; // Full circle every second
+            float x = Mathf.Cos(angle) * radius;
+            float z = Mathf.Sin(angle) * radius;
+            poiObject.transform.position = center + new Vector3(x, 0, z);
+            yield return null;
+        }
+
+        // Move off to the side for 1 second
+        Vector3 direction = new Vector3(1, 0, 0); // Move along the x-axis
+        duration = 1f;
+        time = 0f;
+        while (time < duration)
+        {
+            time += Time.deltaTime;
+            poiObject.transform.position += direction * Time.deltaTime * 2f; // Speed = 2 units/sec
+            yield return null;
+        }
+
+        // Destroy the object
+        Destroy(poiObject);
     }
 
     public IEnumerator getRidOfPOI(List<NewStatusString> points_of_interest, Transform gridParent) {
