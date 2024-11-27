@@ -22,13 +22,15 @@ class FireRescueAgent(Agent):
         self.COST_OPEN_DOOR = 1    # Cost to open a door
 
     def step(self):
-        self.check_stun()
+        
         self.validate_target_fire()
 
         # 1. Gain action points at the beginning of the turn
         self.storedAP += self.AP_PER_TURN
         if self.storedAP > self.MAX_AP:
             self.storedAP = self.MAX_AP
+
+        self.check_stun()
 
         print(f"[Agent {self.unique_id}] Starting step with {self.storedAP} AP at position {self.pos}.")
 
@@ -370,9 +372,11 @@ class FireRescueAgent(Agent):
 
                 # Check for fire at the entry point
                 if self.model.fires.data[nearest_entry] == 1:
-                    # Convert fire to smoke
-                    self.model.fires.set_cell(nearest_entry, 0.5)
-                    print(f"[Agent {self.unique_id}] Converted fire to smoke at entry point {nearest_entry}.")
+                    # Extinguish
+                    self.model.fires.set_cell(nearest_entry, 0)
+                    print(f"[Agent {self.unique_id}] Extinguished fire at spawn at entry point {nearest_entry}.")
+                    self.storedAP -= self.COST_EXTINGUISH_FIRE
+
     
     def reveal_poi(self):
         poi_type = self.model.reveal_poi_at(self.pos)
