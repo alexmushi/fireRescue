@@ -63,3 +63,4 @@
 - Hacer que se agreguen los nuevos puntos de interés y que se guarde si son verdaderos o no (26/11/2024).
 - Hacer que se destruyan los POI y que se revelen, al igual que desparezcan si mueren (27/11/2024).
 - Agregarle el orden a los POI (27/11/2024).
+- Hacer que las fake POI se muevan y agregarles sound effect (27/11/2024.)
