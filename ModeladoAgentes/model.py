@@ -667,9 +667,16 @@ class FireRescueModel(Model):
         if self.currentAgentIndex < len(self.agents):
             agent = self.agents[self.currentAgentIndex]
 
-            self.changes = { 'walls': [], 'fires': [], 'damage': [], 'points_of_interest': [], 'doors': [], 'explosions': [], 'actions': []}
+            self.changes = {
+                'walls': [], 'fires': [], 'damage': [],
+                'points_of_interest': [], 'doors': [], 'explosions': [], 'actions': []
+            }
 
             agent.step()
+
+            # After the agent's turn, check stun for all agents
+            for other_agent in self.agents:
+                other_agent.check_stun()
 
             self.assign_fire()
             self.check_smoke()
@@ -681,6 +688,7 @@ class FireRescueModel(Model):
 
             if self.currentAgentIndex >= len(self.agents):
                 self.currentAgentIndex = 0  # Reset to the first agent
+
 
     def step(self):
         if self.check_game_over():
@@ -699,7 +707,10 @@ class FireRescueModel(Model):
             agent.step()
             print(f"[Agent {agent.unique_id}] Step Ends with remaining AP: {agent.storedAP}")
             print(f"{model.false_alarms} False Alarms Remaining")
-            print(f"{model.victims} Victims Remaining at ")
+            print(f"{model.victims} Victims Remaining")
+
+            for other_agent in self.agents:
+               other_agent.check_stun()
 
             self.assign_fire()
             self.check_smoke()
@@ -709,7 +720,7 @@ class FireRescueModel(Model):
         self.datacollector.collect(self)
 
 
-""" # Para checar victorias en varias simulaciones
+# Para checar victorias en varias simulaciones
 if __name__ == "__main__":
     NUM_SIMULATIONS = 100
     victories = 0
@@ -737,8 +748,8 @@ if __name__ == "__main__":
     print(f"Victories: {victories}")
     print(f"Losses: {losses}")
 
- """
-# Debug mode
+
+""" # Debug mode
 if __name__ == "__main__":
      model = FireRescueModel()
      print("Initial State:")
@@ -752,4 +763,4 @@ if __name__ == "__main__":
      print(f"Steps: {model.steps}")
      print(f"People Rescued: {model.people_rescued}")
      print(f"People Lost: {model.people_lost}")
-     print(f"Damage Points: {model.damage_points}")
+     print(f"Damage Points: {model.damage_points}") """

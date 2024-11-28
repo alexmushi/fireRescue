@@ -35,7 +35,6 @@ class FireRescueAgent(Agent):
         if self.storedAP > self.MAX_AP:
             self.storedAP = self.MAX_AP
 
-        self.check_stun()
 
         print(f"[Agent {self.unique_id}] Starting step with {self.storedAP} AP at position {self.pos}.")
 
