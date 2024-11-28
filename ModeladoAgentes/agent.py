@@ -108,6 +108,9 @@ class FireRescueAgent(Agent):
                         move_cost = self.get_movement_cost(self.pos, next_step)
                         if self.storedAP >= move_cost:
                             self.move_to(next_step, with_victim=True)
+                            # After moving, check if at exit
+                            if self.model.is_exit(self.pos):
+                                self.drop_victim()
                             return True
         else:
             # Check for victim or POI at current cell
