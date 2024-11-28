@@ -46,6 +46,24 @@ def get_walls(value):
     }
     return walls
 
+def serialize_doors(doors):
+    doors_serialized = [
+        {
+            "coord1": list(coord1),
+            "coord2": list(coord2),
+            "status": status
+        }
+        for door, status in doors.items()
+        for coord1, coord2 in [sorted(door)]
+    ]
+
+    return doors_serialized
+
+def _serialize_door_position(door_key):
+        sorted_positions = sorted(door_key)
+
+        return [list(cell) for cell in sorted_positions]
+
 def get_game_variables(archivo):
     contenido = leer_archivo(archivo).strip().split("\n")
     index = 0
@@ -80,6 +98,8 @@ def get_game_variables(archivo):
     damage.fill((0, 0, 0, 0))
 
     points_of_interest = []
+    total_victims = 0
+    total_false_alarms = 0
     for _ in range(3):
         line = contenido[index].strip()
         parts = line.split()
@@ -87,7 +107,14 @@ def get_game_variables(archivo):
         x = int(parts[1])
         poi_type = parts[2]
         points_of_interest.append({'x': x, 'y': y, 'type': poi_type})
+
+        if poi_type == 'v':
+            total_victims += 1
+        elif poi_type == 'f':
+            total_false_alarms += 1
+
         index += 1
+
     
     fires = []
     for _ in range(10):
@@ -121,4 +148,4 @@ def get_game_variables(archivo):
         entry_points.append((x, y))
         index += 1
 
-    return walls, damage, points_of_interest, fires, doors, entry_points
+    return walls, damage, points_of_interest, fires, doors, entry_points, total_victims, total_false_alarms

@@ -2,11 +2,18 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import logging
 import json
 
+from model import FireRescueModel
+from util import serialize_doors
+
+model = FireRescueModel()
+
+model.print_map(model.walls.T, model.fires.data.T)
+
 class Server(BaseHTTPRequestHandler):
     
     def _set_response(self):
         self.send_response(200)
-        self.send_header('Content-type', 'text/html')
+        self.send_header('Content-Type', 'application/json')
         self.end_headers()
         
     def do_GET(self):
@@ -14,14 +21,47 @@ class Server(BaseHTTPRequestHandler):
         self.wfile.write("GET request for {}".format(self.path).encode('utf-8'))
 
     def do_POST(self):
-        position = {
-            "x" : 1,
-            "y" : 2,
-            "z" : 3
-        }
+
+        if model.firstStep == True:
+            data = {
+                "damage_points": model.damage_points,
+                "people_lost": model.people_lost,
+                "people_rescued": model.people_rescued,
+                "width": model.width,
+                "height": model.height,
+                "walls": model.walls.tolist(),
+                "fires": model.fires.data.tolist(),
+                "points_of_interest": model.points_of_interest.data.tolist(),
+                "doors": serialize_doors(model.doors),
+                "entry_points": model.entry_points, 
+                "agent_positions": model.get_all_agent_positions()
+            }
+            model.firstStep = False
+        else:
+            model.step_one_agent()
+            data = {
+                "damage_points": model.damage_points,
+                "people_lost": model.people_lost,
+                "people_rescued": model.people_rescued,
+                "width": model.width,
+                "height": model.height,
+                "walls": model.changes["walls"],
+                "fires": model.changes["fires"],
+                "damage": model.changes["damage"],
+                "points_of_interest": model.changes["points_of_interest"],
+                "doors": model.changes["doors"], 
+                "explosions": model.changes["explosions"],
+                "agent_positions": model.get_all_agent_positions(),
+                "actions": model.changes["actions"],
+                "simulation_finished": model.simulationFinished
+            }
+            print(model.changes)
+            model.print_map(model.walls.T, model.fires.data.T)
+
+        json_data = json.dumps(data)
 
         self._set_response()
-        self.wfile.write(str(position).encode('utf-8'))
+        self.wfile.write(json_data.encode('utf-8'))
 
 
 def run(server_class=HTTPServer, handler_class=Server, port=8585):
@@ -43,3 +83,4 @@ if __name__ == '__main__':
         run(port=int(argv[1]))
     else:
         run()
+        

@@ -21,3 +21,47 @@
 - Corregir error de explosiones con pared, y agregar puertas (19/11/2024).
 - Imprimir el mapa para visualización y arreglar manejo de paredes (20/11/2024).
 - Agregar un nuevo mapa para probar distintos mapas (20/11/2024).
+- Agregar primra aproximación de agente básico (20/11/2024).
+- Agregar condiciones de paro para cuando termine el juego (20/11/2024).
+- Mandar datos de modelo a Unity primera version (20/11/2024).
+- Crear Grid en Unity en base a width y height enviados de Python (20/11/2024).
+- Agregar model de paredes y primera version de paredes (21/11/2024).
+- Agregar prefab de pared modelada en 3D (21/11/2024).
+- Fix de prefab 3D Wall (21/11/2024).
+- Agregar paredes al grid de forma correcta (21/11/2024).
+- Arreglar paredes y el brillo para formar el mapa correctamente (21/11/2024).
+- Poner Puertas en el grid correctamente (21/11/2024).
+- Optimizar que las paredes y las puertas solo se renderizen una vez (21/11/2024).
+- Refactor para utilizar Singletons y agregar entry points con nuevo prefab (21/11/2024).
+- Agregar fuegos en el grid e importar mouse Droid (22/11/2024).
+- Agregar modelos de Clones y de R2D2 (22/11/2024).
+- Agregar modelo de Jedi Yoda (22/11/2024).
+- Agregar modelo de Anakin como Jedi (23/11/2024).
+- Agregar modelo de Dooku como Jedi (23/11/2024).
+- Agregar modelo de Grievous como Jedi (23/11/2024).
+- Agregar modelo De Mando como Jedi (23/11/2024).
+- Agregar modelo de Ahsoka como Jedi (23/11/2024).
+- Cambiar nombre de carpeta de Ahsoka (23/11/2024).
+- Agregar POI sin revelar y el efecto de hover sobre ellos (23/11/2024).
+- Agregar lista de cambios en modelo para poder recibirlos en unity (24/11/2024).
+- Agregar que desparezcan las puertas y paredes en las explosiones (24/11/2024).
+- Agregar prefab de smoke con script de movimiento (25/11/2024).
+- Agregar movimiento a modelo de fuego (25/11/2024).
+- Agregar que se agreguen los fuegos despues de las explosiones en orden (25/11/2024).
+- Asegurar que se elimine el fuego de la lista despues de colocarlo para evitar duplicados (25/11/2024).
+- Refactor para agregar dos funciones a helper functions (25/11/2024).
+- Agregar función de camara para jugador (25/11/2024).
+- Agregar función de shake para la cámara como para la pared (25/11/2024).
+- Agregar que los agentes se instancien en su posición inicial (25/11/2024).
+- Agregar que se apague el fuego que los agentes apaguen (26/11/2024).
+- Agregar mejora donde los agentes no desperdician energía y se encuentra el fuego y humo más cercano correctamente (26/11/2024).
+- Agregar que los rescuers también usen la función de A* y borrar funciones inecesarias (26/11/2024).
+- Arreglar funcion de shake en camara para explosiones (26/11/2024).
+- Homologar que todas las funciones usen A* (26/11/2024).
+- Hacer que los humos también se extingan (26/11/2024).
+- Hacer que los humos desaparezcan si surge un nuevo fuego (26./11/2024).
+- Hacer que se agreguen los nuevos puntos de interés y que se guarde si son verdaderos o no (26/11/2024).
+- Hacer que se destruyan los POI y que se revelen, al igual que desparezcan si mueren (27/11/2024).
+- Agregarle el orden a los POI (27/11/2024).
+- Hacer que las fake POI se muevan y agregarles sound effect (27/11/2024.)
+- Hacer la animacion que se abra la puerta (27/11/2024.)
