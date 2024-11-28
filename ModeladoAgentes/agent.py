@@ -137,6 +137,10 @@ class FireRescueAgent(Agent):
         fireAssigned = False
         if not self.target_fire:
             fireAssigned = self.assign_fire_target()
+
+        if self.model.is_poi_at(self.pos):
+            self.reveal_poi()
+            return True  # Action performed
         
         if not self.target_fire and not fireAssigned and not self.target_smoke:
             self.assign_smoke_target()
@@ -497,7 +501,8 @@ class FireRescueAgent(Agent):
         poi_type = self.model.reveal_poi_at(self.pos)
         if poi_type == 'v':
             print(f"Victim revealed at {self.pos}")
-            self.pick_up_victim()
+            if self.is_rescuer:
+                self.pick_up_victim()
             # Record action
             self.model.changes['actions'].append({
                 'agent_id': self.unique_id,
