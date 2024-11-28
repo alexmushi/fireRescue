@@ -392,6 +392,30 @@ class FireRescueAgent(Agent):
 
         return closest_exit
     
+    def get_exits_sorted_by_distance(self):
+        # Get positions of all exits
+        exit_positions = list(self.model.entry_points)
+        
+        if not exit_positions:
+            return []  # No exits available
+
+        exit_costs = []
+
+        # Iterate over each exit to find the cost
+        for exit_pos in exit_positions:
+            path, total_cost = self.a_star(self.pos, exit_pos)
+            if path:
+                exit_costs.append((total_cost, exit_pos))
+
+        # Sort exits by total cost
+        exit_costs.sort(key=lambda x: x[0])
+
+        # Return list of exit positions sorted by cost
+        sorted_exits = [exit_pos for _, exit_pos in exit_costs]
+
+        return sorted_exits
+
+    
     def find_nearest_poi(self):
         # Get positions of all POIs
         poi_positions = self.model.get_poi_positions()
@@ -416,19 +440,58 @@ class FireRescueAgent(Agent):
         if self.model.fires.data[self.pos] == 1:
             print(f"[Agent {self.unique_id}] stunned at {self.pos}. Escaping to nearest entry point.")
 
-            # Find the nearest entry point
-            nearest_entry = self.find_nearest_exit()
-            if nearest_entry:
-                # Move instantly to the entry point
-                self.model.grid.move_agent(self, nearest_entry)
-                print(f"[Agent {self.unique_id}] Escaped to entry point at {nearest_entry}.")
+            # Get list of entry points sorted by distance
+            sorted_exits = self.get_exits_sorted_by_distance()
+            acceptable_exit = None
 
-                # Check for fire at the entry point
-                if self.model.fires.data[nearest_entry] == 1:
+            for exit_pos in sorted_exits:
+                fire_at_exit = self.model.fires.data[exit_pos]
+                if fire_at_exit == 1:
+                    # Fire at exit
+                    if self.storedAP >= self.COST_EXTINGUISH_FIRE:
+                        # Has enough AP to extinguish fire
+                        acceptable_exit = exit_pos
+                        break
+                    else:
+                        # Not enough AP, continue to next exit
+                        continue
+                else:
+                    # No fire at exit
+                    acceptable_exit = exit_pos
+                    break
+
+            if acceptable_exit:
+                # Move instantly to the acceptable exit
+                prev_pos = self.pos
+                self.model.grid.move_agent(self, acceptable_exit)
+                print(f"[Agent {self.unique_id}] Escaped to entry point at {acceptable_exit}.")
+
+                # Record move action
+                self.model.changes['actions'].append({
+                    'agent_id': self.unique_id,
+                    'action': 'move',
+                    'from': list(prev_pos),
+                    'to': list(acceptable_exit)
+                })
+
+                # Check for fire at the acceptable exit
+                if self.model.fires.data[acceptable_exit] == 1:
                     # Extinguish
-                    self.model.fires.set_cell(nearest_entry, 0)
-                    print(f"[Agent {self.unique_id}] Extinguished fire at spawn at entry point {nearest_entry}.")
+                    self.model.set_fire_changes_cell(acceptable_exit, 0)
+                    print(f"[Agent {self.unique_id}] Extinguished fire at entry point {acceptable_exit}.")
                     self.storedAP -= self.COST_EXTINGUISH_FIRE
+
+                    # Record action
+                    self.model.changes['actions'].append({
+                        'agent_id': self.unique_id,
+                        'action': 'extinguish_fire',
+                        'position': list(acceptable_exit)
+                    })
+            else:
+                # No acceptable exit found
+                print(f"[Agent {self.unique_id}] No available exit without fire or enough AP to extinguish fire.")
+                # Agent remains in place
+
 
     def reveal_poi(self):
         poi_type = self.model.reveal_poi_at(self.pos)
@@ -449,22 +512,6 @@ class FireRescueAgent(Agent):
                 'action': 'reveal_poi_false_alarm',
                 'position': list(self.pos)
             })
-
-    def is_wall_break_necessary(self, from_pos, to_pos):
-        """
-        Check if breaking the wall is the only way to reach the target position.
-        """
-        neighbors = self.model.grid.get_neighborhood(
-            from_pos,
-            moore=False,
-            include_center=False
-        )
-
-        for neighbor in neighbors:
-            if neighbor == to_pos:
-                continue
-            if not self.has_wall_between_without_closed_door(from_pos, neighbor):
-                return False  # Found an alternative path
 
     def find_highest_priority_fire(self):
         fires = self.model.get_all_fires()
