@@ -720,7 +720,7 @@ class FireRescueModel(Model):
         self.datacollector.collect(self)
 
 
-# Para checar victorias en varias simulaciones
+""" # Para checar victorias en varias simulaciones
 if __name__ == "__main__":
     NUM_SIMULATIONS = 100
     victories = 0
@@ -747,9 +747,9 @@ if __name__ == "__main__":
     print(f"Total Simulations: {NUM_SIMULATIONS}")
     print(f"Victories: {victories}")
     print(f"Losses: {losses}")
+ """
 
-
-""" # Debug mode
+# Debug mode
 if __name__ == "__main__":
      model = FireRescueModel()
      print("Initial State:")
@@ -763,4 +763,4 @@ if __name__ == "__main__":
      print(f"Steps: {model.steps}")
      print(f"People Rescued: {model.people_rescued}")
      print(f"People Lost: {model.people_lost}")
-     print(f"Damage Points: {model.damage_points}") """
+     print(f"Damage Points: {model.damage_points}")
