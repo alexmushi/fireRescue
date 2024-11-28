@@ -68,11 +68,11 @@ class FireRescueAgent(Agent):
                 if fire_value == 1 and self.storedAP >= self.COST_EXTINGUISH_FIRE:
                     self.extinguish_fire(neighbor_pos)
                     action_performed = True
-                    break
+
                 elif fire_value == 0.5 and self.storedAP >= self.COST_EXTINGUISH_SMOKE:
                     self.extinguish_smoke(neighbor_pos)
                     action_performed = True
-                    break
+    
 
             if action_performed:
                 continue
