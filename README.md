@@ -16,7 +16,8 @@ The current strategy achieves a **>95 % win rate** on the classic board using 
 - Dynamic fire & smoke propagation with explosions, walls and doors.
 - Dedicated rescuer agent that prioritises victims and exits.
 - JSON HTTP interface between Mesa model and Unity viewer.
-- Demonstrated win rate above 95 % across hundreds of random seeds.
+- Demonstrated win rate above 95 % across hundreds of random seeds on the classic map.
+- More maps can be used by editing the layout
 
 ## Getting started
 
